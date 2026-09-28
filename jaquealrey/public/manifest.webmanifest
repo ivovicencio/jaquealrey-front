@@ -1,0 +1,32 @@
+{
+  "name": "Hotel Jaque al Rey - Panel",
+  "short_name": "Jaque al Rey",
+  "description": "Gestion de reservas del Hotel Jaque al Rey",
+  "theme_color": "#1a1410",
+  "background_color": "#1a1410",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "scope": "/",
+  "start_url": "/admin",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
