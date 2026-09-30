@@ -1,0 +1,106 @@
+<div
+  #rootRef
+  class="circular-carousel {{ className() }}"
+  [style]="style()"
+  [style.--cc-fade]="fadeColor()"
+  [style.--cc-radius]="ccRadius()"
+  [style.--cc-inner]="ccInner()"
+  role="region"
+  aria-roledescription="carousel"
+  aria-label="Carrusel de servicios"
+  tabindex="0"
+  [attr.data-axis]="axis()"
+  [attr.data-shape]="shape()"
+  [attr.data-ready]="ready() ? '' : undefined"
+  [attr.data-draggable]="draggable() ? '' : undefined"
+  [attr.data-dragging]="dragging() ? '' : undefined"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp($event)"
+  (pointercancel)="onPointerUp($event)"
+  (pointerenter)="onPointerEnter($event)"
+  (pointerleave)="onPointerLeave($event)"
+  (click)="onClick($event)"
+  (keydown)="onKeyDown($event)"
+>
+  <div class="circular-carousel__view">
+    <div #stageRef class="circular-carousel__stage">
+      <div #cameraRef class="circular-carousel__camera">
+        <div #ringRef class="circular-carousel__ring">
+          @for (item of items(); track $index; let index = $index) {
+            <div
+              appCcCard
+              class="circular-carousel__card"
+              [attr.data-cc-index]="index"
+              role="group"
+              aria-roledescription="slide"
+              [attr.aria-label]="cardLabel(item, index)"
+            >
+              @for (tile of tiles(); track 'f' + tile.index) {
+                <div class="circular-carousel__tile" [style]="tileBox(tile, false)" [style.transform]="tileMove(tile, false)" aria-hidden="true">
+                  <div class="circular-carousel__frame" [style]="tileFrameStyle(tile, false)">
+                    <img
+                      class="circular-carousel__photo"
+                      [src]="item.src"
+                      alt=""
+                      draggable="false"
+                      decoding="async"
+                      [style]="tilePhotoStyle(tile, false)"
+                    />
+                    <div class="circular-carousel__shade"></div>
+                  </div>
+                </div>
+              }
+              @if (layout().backfaces) {
+                @for (tile of tiles(); track 'b' + tile.index) {
+                  <div class="circular-carousel__tile" [style]="tileBox(tile, true)" [style.transform]="tileMove(tile, true)" aria-hidden="true">
+                    <div class="circular-carousel__frame" [style]="tileFrameStyle(tile, true)">
+                      <img
+                        class="circular-carousel__photo"
+                        [src]="item.src"
+                        alt=""
+                        draggable="false"
+                        decoding="async"
+                        [style]="tilePhotoStyle(tile, true)"
+                      />
+                      <div class="circular-carousel__inner"></div>
+                      <div class="circular-carousel__shade"></div>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+  @if (captions() && current() && count() > 0) {
+    <div class="circular-carousel__caption" aria-hidden="true">
+      <span class="circular-carousel__title">
+        {{ current()!.title || current()!.alt }}
+        @if (current()!.subtitle) {
+          <span class="circular-carousel__subtitle">{{ current()!.subtitle }}</span>
+        }
+      </span>
+      <span class="circular-carousel__count">
+        <span class="circular-carousel__digits">
+          @for (digit of digitList(active() + 1); track $index) {
+            <span class="circular-carousel__digit">
+              <span class="circular-carousel__reel" [style.transform]="reelTransform(digit)">
+                @for (n of '0123456789'; track $index) {
+                  <span>{{ n }}</span>
+                }
+              </span>
+            </span>
+          }
+        </span>
+        <span class="circular-carousel__slash">/</span>
+        <span>{{ ('0' + count()).slice(-2) }}</span>
+      </span>
+    </div>
+  }
+  <div class="circular-carousel__live" aria-live="polite" aria-atomic="true">
+    {{ label() }}, {{ active() + 1 }} of {{ count() }}
+  </div>
+</div>

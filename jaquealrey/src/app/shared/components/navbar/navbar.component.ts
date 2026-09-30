@@ -1,35 +1,48 @@
-import { Component, inject, signal, HostListener, OnInit, OnDestroy } from '@angular/core';
-import { RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { Component, inject, signal, computed, effect, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { RouterLink, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { obtenerNotificaciones } from '../../../core/services/notification.service';
+import { FlowingMenuComponent } from '../flowing-menu/flowing-menu.component';
+import { FlowingMenuItem } from '../flowing-menu/flowing-menu.model';
 import { filter } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, FlowingMenuComponent],
   template: `
     <nav class="navbar" [class.scrolled]="scrolled()" [class.has-bg]="!isHome()">
       <div class="navbar-inner container">
         <a class="navbar-brand" routerLink="/"><span class="logo-icon">&#9819;</span> Hotel Jaque al Rey</a>
 
-        <button class="hamburger" (click)="toggleMenu()" [class.active]="menuOpen()">
+        <button
+          class="hamburger"
+          (click)="toggleMenu()"
+          [class.active]="menuOpen()"
+          [attr.aria-expanded]="menuOpen()"
+          aria-label="Menu"
+        >
           <span></span><span></span><span></span>
         </button>
+      </div>
 
-        <ul class="navbar-links" [class.open]="menuOpen()">
-          <li><a routerLink="/habitaciones" routerLinkActive="active" (click)="closeMenu()">Habitaciones</a></li>
-          <li><a routerLink="/buscar-disponibilidad" routerLinkActive="active" (click)="closeMenu()">Buscar Disponibilidad</a></li>
-          <li><a routerLink="/consultar-reserva" routerLinkActive="active" (click)="closeMenu()">Consultar mi Reserva</a></li>
-        </ul>
-
-        @if (authService.isAdmin()) {
-          <ul class="navbar-auth" [class.open]="menuOpen()">
-            <li><a routerLink="/admin" routerLinkActive="active" (click)="closeMenu()">Panel</a></li>
-            <li><a (click)="logout()" class="btn btn-outline btn-sm">Salir</a></li>
-          </ul>
-        }
+      <div class="fullmenu" [class.open]="menuOpen()">
+        <div class="fullmenu-top">
+          <span class="fullmenu-logo">&#9819; Hotel Jaque al Rey</span>
+          <button class="fullmenu-close" (click)="closeMenu()" aria-label="Cerrar menu">&times;</button>
+        </div>
+        <app-flowing-menu
+          class="fullmenu-body"
+          [items]="menuItems()"
+          [speed]="11"
+          [textColor]="'#f3ece1'"
+          [bgColor]="'#0f0b08'"
+          [marqueeBgColor]="'var(--gold-light)'"
+          [marqueeTextColor]="'#140f0a'"
+          [borderColor]="'rgba(255,255,255,0.14)'"
+          (navegar)="onMenuNavigate($event)"
+        />
       </div>
     </nav>
   `,
@@ -79,49 +92,9 @@ import { Subscription } from 'rxjs';
       font-size: 1.4rem;
       line-height: 1;
     }
-    .navbar-links, .navbar-auth {
-      display: flex;
-      align-items: center;
-      gap: 28px;
-    }
-    .navbar-links a {
-      font-size: 0.85rem;
-      font-weight: 400;
-      color: rgba(255, 255, 255, 0.85);
-      letter-spacing: 0.3px;
-      position: relative;
-      transition: var(--transition);
-      padding: 0.25rem 0;
-    }
-    .navbar-links a::after {
-      content: '';
-      position: absolute;
-      bottom: -3px;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: var(--gold-light);
-      transition: var(--transition);
-    }
-    .navbar-links a:hover { color: #fff; }
-    .navbar-links a:hover::after { width: 100%; }
-    .navbar-links a.active { color: #fff; }
-    .navbar-links a.active::after { width: 100%; }
-    .navbar-auth { gap: 0.5rem; }
-    .navbar-auth a { cursor: pointer; }
-    .navbar-auth .btn-outline {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 6px 14px !important;
-      border-radius: 100px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      font-size: 0.8rem !important;
-    }
-    .navbar-auth .btn-outline:hover {
-      background: rgba(255, 255, 255, 0.2) !important;
-    }
 
     .hamburger {
-      display: none;
+      display: flex;
       flex-direction: column;
       gap: 5px;
       background: none;
@@ -141,26 +114,66 @@ import { Subscription } from 'rxjs';
     .hamburger.active span:nth-child(2) { opacity: 0; }
     .hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+    /* Menu FlowingMenu a pantalla completa, por encima del nav. */
+    .fullmenu {
+      position: fixed;
+      inset: 0;
+      /* dvh y no vh: en el celu vh excede la pantalla cuando la barra del
+         navegador aparece, y el ultimo item quedaba cortado. */
+      height: 100dvh;
+      z-index: 1002;
+      display: flex;
+      flex-direction: column;
+      background: #0f0b08;
+      padding-bottom: env(safe-area-inset-bottom);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-12px);
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s;
+    }
+    .fullmenu.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .fullmenu-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex: 0 0 auto;
+      padding: 18px 24px;
+      padding-top: calc(18px + env(safe-area-inset-top));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .fullmenu-logo {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      letter-spacing: 0.3px;
+      color: var(--gold-light);
+    }
+    .fullmenu-close {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .fullmenu-close:hover { background: rgba(255, 255, 255, 0.12); }
+    /* min-height:0 es lo que deja que los items repartan la pantalla en vez de
+       desbordar cuando son varios (admin suma Panel y Salir). */
+    .fullmenu-body {
+      display: block;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
     @media (max-width: 768px) {
-      .hamburger { display: flex; }
-      .navbar-links, .navbar-auth {
-        display: none;
-        position: fixed;
-        top: 0;
-        right: -100%;
-        width: 280px;
-        height: 100vh;
-        background: rgba(26, 20, 16, 0.98);
-        backdrop-filter: blur(20px);
-        flex-direction: column;
-        padding: 80px 32px 32px;
-        gap: 18px;
-        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
-      }
-      .navbar-links.open, .navbar-auth.open { display: flex; right: 0; }
-      .navbar-links a, .navbar-auth a { width: 100%; justify-content: center; color: rgba(255, 255, 255, 0.85); }
-      .navbar-auth { border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem; }
+      .fullmenu-top { padding: 14px 18px; }
     }
   `
 })
@@ -173,15 +186,59 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   private routerSub!: Subscription;
 
+  /** Items del menu visual. Las fotos salen de /assets, las que ya usa el home. */
+  menuItems = computed<FlowingMenuItem[]>(() => {
+    const items: FlowingMenuItem[] = [
+      { link: '/', text: 'Inicio', image: '/assets/hero.jpeg' },
+      { link: '/habitaciones', text: 'Habitaciones', image: '/assets/nosequehabitaciones1.jpeg' },
+      { link: '/buscar-disponibilidad', text: 'Buscar disponibilidad', image: '/assets/departamento.jpeg' },
+      { link: '/consultar-reserva', text: 'Consultar mi reserva', image: '/assets/recepcion.jpeg' },
+    ];
+    if (this.authService.isAdmin()) {
+      items.push({ link: '/admin', text: 'Panel', image: '/assets/mismodepartamento.jpeg' });
+      items.push({ link: '/salir', text: 'Salir', image: '/assets/nosequehabitaciones3.jpeg' });
+    }
+    return items;
+  });
+
+  constructor() {
+    // El menu es a pantalla completa: sin esto el scroll de fondo se mueve
+    // por detras mientras esta abierto.
+    effect(() => {
+      const abierto = this.menuOpen();
+      document.body.style.overflow = abierto ? 'hidden' : '';
+    });
+  }
+
+  /** El click lo intercepta el navbar: el menu no sabe de rutas ni de logout. */
+  onMenuNavigate({ ev, link }: { ev: MouseEvent; link: string }) {
+    ev.preventDefault();
+    if (link === '/salir') {
+      this.logout();
+      return;
+    }
+    this.router.navigateByUrl(link);
+    this.closeMenu();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    this.closeMenu();
+  }
+
   ngOnInit() {
     this.checkHome(this.router.url);
     this.routerSub = this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe((e) => this.checkHome(e.urlAfterRedirects || e.url));
+      .subscribe((e) => {
+        this.checkHome(e.urlAfterRedirects || e.url);
+        this.closeMenu();
+      });
   }
 
   ngOnDestroy() {
     this.routerSub?.unsubscribe();
+    document.body.style.overflow = '';
   }
 
   private checkHome(url: string) {
@@ -202,9 +259,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   logout() {
-    this.authService.logout();
     this.closeMenu();
     obtenerNotificaciones()?.disconnect();
-    this.router.navigate(['/']);
+    // El servicio ya limpio el token local antes de emitir, asi que acá el
+    // panel ya no queda logueado aunque el POST al back haya fallado.
+    this.authService.logout().subscribe(() => this.router.navigate(['/']));
   }
 }

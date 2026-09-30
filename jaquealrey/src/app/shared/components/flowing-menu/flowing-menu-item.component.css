@@ -1,0 +1,173 @@
+/* Porte del CSS de FlowingMenu.css. El contenedor (.menu-wrap / .menu) vive
+   en el componente padre; aca va lo de cada item.
+
+   :host tiene que ser flex:1 porque en la version de React cada item era hijo
+   directo de .menu, y aca el hijo directo es el host <app-flowing-menu-item>. */
+
+:host {
+  display: block;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.menu__item {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  text-align: center;
+  border-top: 1px solid;
+}
+
+/* El primero no lleva borde superior. No puede ser .menu__item:first-child
+   porque en Angular ese selector siempre matchea: el div es el unico hijo de su
+   propio host. :host(:first-child) si apunta al primer item de la lista. */
+:host(:first-child) .menu__item {
+  border-top: none;
+}
+
+.menu__item-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  position: relative;
+  cursor: pointer;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  font-weight: 600;
+  /* El original usa 4vh a secas. Con la pantalla baja de un celu apaisado eso
+     daba ~14px, ilegible. El clamp pone piso y techo sin cambiar la escala. */
+  font-size: clamp(1.15rem, 4.6vh, 3.4rem);
+}
+
+.menu__item-link:hover {
+  color: inherit;
+}
+
+.menu__item-link:focus:not(:focus-visible) {
+  color: inherit;
+}
+
+.marquee {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: translate3d(0, 101%, 0);
+}
+
+.marquee__inner-wrap {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.marquee__inner {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 100%;
+  width: fit-content;
+  will-change: transform;
+}
+
+.marquee__part {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.marquee span {
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-weight: 400;
+  font-size: clamp(1.15rem, 4.6vh, 3.4rem);
+  line-height: 1;
+  padding: 0 1vw;
+}
+
+/* La foto del marquee va en blanco y negro: el color lo pone el fondo dorado y
+   el texto, no cada imagen. Es el mismo criterio que la demo (sat=-100). */
+.marquee__img {
+  width: 200px;
+  height: 7vh;
+  margin: 2em 2vw;
+  padding: 1em 0;
+  border-radius: 50px;
+  background-size: cover;
+  background-position: 50% 50%;
+  filter: grayscale(1) contrast(1.05);
+}
+
+/* La fila tiene la foto al costado, asi que el texto centrado no puede usar
+   todo el ancho o se le monta encima. */
+.menu--foto .menu__item-link {
+  padding: 0 clamp(54px, 15vw, 92px);
+}
+
+/* Variante sin hover (celu/tablet) y con reduced-motion: no hay marquee, la foto
+   queda siempre visible al costado del texto y el toque navega al toque. El
+   texto sigue centrado para no romper la simetria de la version desktop. */
+.menu__thumb {
+  position: absolute;
+  right: 5%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(38px, 7vh, 62px);
+  height: clamp(38px, 7vh, 62px);
+  border-radius: 50%;
+  background-size: cover;
+  background-position: 50% 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  filter: grayscale(1) contrast(1.05);
+  pointer-events: none;
+}
+
+/* Efecto de presionado: la foto saca el blanco y negro mientras tocás. */
+.menu--foto .menu__item-link:active ~ .menu__thumb {
+  filter: grayscale(0) contrast(1.05);
+}
+
+@media (max-width: 768px) {
+  .menu__item-link {
+    font-size: clamp(1.1rem, 7.4vw, 2.2rem);
+  }
+  .marquee span {
+    font-size: clamp(1.1rem, 7.4vw, 2.2rem);
+  }
+  .marquee__img {
+    width: 120px;
+    height: 12vw;
+  }
+  .menu__thumb {
+    right: 6%;
+    width: clamp(42px, 12vw, 58px);
+    height: clamp(42px, 12vw, 58px);
+  }
+  .menu--foto .menu__item-link {
+    padding: 0 clamp(56px, 17vw, 96px);
+  }
+}
+
+/* Celu apaisado: la pantalla es ancha y baja, asi que el texto se mide por
+   alto y la foto se achica para no comerse el item. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .menu__item-link,
+  .marquee span {
+    font-size: clamp(1rem, 6.5vh, 1.6rem);
+  }
+  .marquee__img {
+    height: 9vh;
+    width: 130px;
+    margin: 1.2em 1.5vw;
+  }
+  .menu__thumb {
+    width: 34px;
+    height: 34px;
+    right: 4%;
+  }
+}

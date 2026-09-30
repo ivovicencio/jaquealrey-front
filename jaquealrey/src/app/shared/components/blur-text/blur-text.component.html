@@ -1,0 +1,34 @@
+<ng-template #units>
+  @for (word of words(); track $index; let last = $last) {
+    <span class="blur-text__unit" [style]="unitStyle($index)">{{ word }}</span>
+    @if (!last) { {{ ' ' }} }
+  }
+</ng-template>
+
+@switch (tag()) {
+  @case ('h1') {
+    <h1 #rootRef class="blur-text__root {{ className() }}"
+      ><ng-container [ngTemplateOutlet]="units"></ng-container></h1
+    >
+  }
+  @case ('h2') {
+    <h2 #rootRef class="blur-text__root {{ className() }}"
+      ><ng-container [ngTemplateOutlet]="units"></ng-container></h2
+    >
+  }
+  @case ('h3') {
+    <h3 #rootRef class="blur-text__root {{ className() }}"
+      ><ng-container [ngTemplateOutlet]="units"></ng-container></h3
+    >
+  }
+  @case ('p') {
+    <p #rootRef class="blur-text__root {{ className() }}"
+      ><ng-container [ngTemplateOutlet]="units"></ng-container></p
+    >
+  }
+  @default {
+    <span #rootRef class="blur-text__root {{ className() }}"
+      ><ng-container [ngTemplateOutlet]="units"></ng-container></span
+    >
+  }
+}

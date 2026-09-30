@@ -41,12 +41,19 @@ if (!fs.existsSync(INDEX)) {
 }
 
 function proxy(req, res) {
+  // Se quitan Origin y Referer a proposito. El navegador pide al mismo origen
+  // (5500) y este proxy habla con el back servidor-a-servidor, asi que para el
+  // back no hay CORS: no hay origen que validar. Si se reenviara el Origin
+  // original, el back veria "Origin: http://localhost:5500" y lo rechazaria
+  // con "No autorizado por CORS", porque ese origen no esta en CORS_ORIGIN.
+  // Eso rompia todo login y toda reserva en el build de produccion.
+  const { origin, referer, ...headers } = req.headers;
   const opciones = {
     host: API.host,
     port: API.port,
     method: req.method,
     path: req.url,
-    headers: { ...req.headers, host: `${API.host}:${API.port}` },
+    headers: { ...headers, host: `${API.host}:${API.port}` },
   };
   const hacia = http.request(opciones, (resp) => {
     res.writeHead(resp.statusCode, resp.headers);

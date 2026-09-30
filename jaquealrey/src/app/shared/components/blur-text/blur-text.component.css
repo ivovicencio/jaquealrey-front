@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+.blur-text__root {
+  display: inline-block;
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.blur-text__unit {
+  display: inline-block;
+  transition-property: opacity, filter, transform;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, filter, transform;
+}

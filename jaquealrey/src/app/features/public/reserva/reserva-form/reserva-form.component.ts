@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HabitacionService } from '../../../../core/services/habitacion.service';
+import { HabitacionImagenService } from '../../../../core/services/habitacion-imagen.service';
 import { ReservaService } from '../../../../core/services/reserva.service';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { Habitacion } from '../../../../core/models/habitacion.model';
@@ -285,6 +286,7 @@ export class ReservaFormComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private habitacionService = inject(HabitacionService);
+  private imagenes = inject(HabitacionImagenService);
   private reservaService = inject(ReservaService);
   private toast = inject(ToastService);
 
@@ -312,28 +314,29 @@ export class ReservaFormComponent implements OnInit {
   // Consentimiento explicito exigido por la Ley 25.326: sin marcarlo no se reserva.
   consentimiento = false;
 
-  private gradients = [
-    'linear-gradient(135deg, var(--dark) 0%, var(--dark-2) 100%)',
-    'linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%)',
-    'linear-gradient(135deg, var(--dark-2) 0%, var(--gold-dark) 100%)',
-    'linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%)',
-    'linear-gradient(135deg, #3d322b 0%, var(--dark) 100%)',
-  ];
-
   gradient(): string {
-    const h = this.habitacion();
-    return h ? this.gradients[h.numero % this.gradients.length] : this.gradients[0];
+    return this.imagenes.fondoPara(this.habitacion());
   }
 
-  noches = computed(() => {
+  // Metodos y NO computed: form es un objeto plano, no una señal, y un
+  // computed solo se invalida cuando cambia una de las señales que leyo. Como
+  // esto no lee ninguna, el valor se cacheaba para siempre en 0 y la reserva
+  // era imposible de completar: el huesped elegia fechas, el resumen de total
+  // no se actualizaba y el submit rebotaba con "Las fechas no son validas".
+  // Un metodo se recalcula en cada ciclo de deteccion de cambios y siempre ve
+  // el estado real. gradient() mas abajo ya usa este mismo patron.
+  noches(): number {
     if (!this.form.fecha_entrada || !this.form.fecha_salida) return 0;
     const d1 = new Date(this.form.fecha_entrada);
     const d2 = new Date(this.form.fecha_salida);
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0;
     const diff = Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
     return diff > 0 ? diff : 0;
-  });
+  }
 
-  total = computed(() => this.noches() * this.precioNoche());
+  total(): number {
+    return this.noches() * this.precioNoche();
+  }
 
   huespedesOptions = computed(() => {
     const max = this.habitacion()?.capacidad_max ?? 4;
@@ -358,7 +361,11 @@ export class ReservaFormComponent implements OnInit {
         if (res.status === '1') {
           this.habitacion.set(res.data);
           this.precioNoche.set(precio || res.data.precio_noche);
-          this.form.huespedes = Math.min(1, res.data.capacidad_max);
+          // Math.min(2, capacidad): con un 1 primero el Math.min daba 1 para
+          // cualquier habitacion, asi que una de 4 personas arrancaba con un
+          // solo huesped. El 2 es un default razonable y nunca excede la
+          // capacidad real de la habitacion.
+          this.form.huespedes = Math.max(1, Math.min(2, res.data.capacidad_max));
         } else {
           this.loadError.set(true);
         }

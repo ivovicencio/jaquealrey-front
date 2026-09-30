@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HabitacionService } from '../../../../core/services/habitacion.service';
+import { HabitacionImagenService } from '../../../../core/services/habitacion-imagen.service';
 import { Habitacion } from '../../../../core/models/habitacion.model';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 
@@ -211,6 +212,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 })
 export class HabitacionListComponent implements OnInit {
   private habitacionService = inject(HabitacionService);
+  private imagenes = inject(HabitacionImagenService);
 
   habitaciones = signal<Habitacion[]>([]);
   filtered = signal<Habitacion[]>([]);
@@ -223,16 +225,8 @@ export class HabitacionListComponent implements OnInit {
   precioMax = signal(0);
   maxPrice = 50000;
 
-  private gradients = [
-    'linear-gradient(135deg, var(--dark) 0%, var(--dark-2) 100%)',
-    'linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%)',
-    'linear-gradient(135deg, var(--dark-2) 0%, var(--gold-dark) 100%)',
-    'linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%)',
-    'linear-gradient(135deg, #3d322b 0%, var(--dark) 100%)',
-  ];
-
   gradientFor(h: Habitacion): string {
-    return this.gradients[h.numero % this.gradients.length];
+    return this.imagenes.fondoPara(h);
   }
 
   ngOnInit() {
