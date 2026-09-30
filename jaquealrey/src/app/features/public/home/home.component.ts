@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, viewChild, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HotelService } from '../../../core/services/hotel.service';
 import { HabitacionService } from '../../../core/services/habitacion.service';
@@ -12,41 +12,70 @@ import { SpecularButtonComponent } from '../../../shared/components/specular-but
 import { BorderGlowComponent } from '../../../shared/components/border-glow/border-glow.component';
 import { CircularCarouselComponent, CircularCarouselItem } from '../../../shared/components/circular-carousel/circular-carousel.component';
 import { BlurTextComponent } from '../../../shared/components/blur-text/blur-text.component';
+import { OptionWheelComponent } from '../../../shared/components/option-wheel/option-wheel.component';
+import { RESENIAS, Resenia } from './resenias.data';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, CurrencyArPipe, ScrollExpandComponent, DepthCarouselComponent, SpecularButtonComponent, BorderGlowComponent, CircularCarouselComponent, BlurTextComponent],
+  imports: [RouterLink, CurrencyArPipe, ScrollExpandComponent, DepthCarouselComponent, SpecularButtonComponent, BorderGlowComponent, CircularCarouselComponent, BlurTextComponent, OptionWheelComponent],
   template: `
     <section class="hero">
-      <div class="hero-bg"></div>
-      <div class="hero-overlay"></div>
-      <div class="hero-content container">
-        <span class="hero-badge">Piedra del Aguila, Neuquen</span>
-        <h1 class="hero-title">
-          <app-blur-text
-            text="Hotel Jaque al Rey"
-            tag="span"
-            [delay]="0.09"
-            [duration]="0.7"
-            [from]="10"
-            direction="bottom"
-          />
-        </h1>
-        <p class="hero-tagline">Tu refugio en el corazon de la Patagonia</p>
-        <div class="hero-actions">
-          <a routerLink="/habitaciones" class="btn btn-primary btn-lg">Ver Habitaciones</a>
-          <a routerLink="/buscar-disponibilidad" class="btn btn-outline btn-lg">Buscar Disponibilidad</a>
-        </div>
-        <div class="hero-features">
-          <span><i class="fas fa-map-marker-alt"></i> Ubicacion privilegiada</span>
-          <span><i class="fas fa-wifi"></i> Wifi gratis</span>
-          <span><i class="fas fa-bed"></i> Confort premium</span>
+      <!-- Imagen real, no background-image: asi puede llevar fetchpriority, que
+           es lo que marca el LCP de la home. Va envuelta en un div para poder
+           darle margenes de seguridad sin romper el object-fit. -->
+      <div class="hero-figure">
+        <img
+          class="hero-img"
+          src="/assets/hero2-web.jpg"
+          alt="Rey blanco de ajedrez"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </div>
+      <div class="hero-scrim" aria-hidden="true"></div>
+      <div class="hero-fade" aria-hidden="true"></div>
+
+      <div class="hero-content">
+        <div class="hero-inner">
+          <span class="hero-kicker">Piedra del Aguila, Neuquen</span>
+          <h1 class="hero-title">
+            <app-blur-text
+              text="Hotel Jaque al Rey"
+              tag="span"
+              [delay]="0.09"
+              [duration]="0.7"
+              [from]="10"
+              direction="bottom"
+            />
+          </h1>
+          <p class="hero-tagline">Tu refugio en el corazon de la Patagonia</p>
+          <div class="hero-actions">
+            <a routerLink="/habitaciones" class="btn-hero btn-hero--primary">Ver Habitaciones</a>
+            <a routerLink="/buscar-disponibilidad" class="btn-hero btn-hero--ghost">Buscar Disponibilidad</a>
+          </div>
         </div>
       </div>
-      <div class="hero-scroll">
-        <span>Explorar</span>
-        <i class="fas fa-chevron-down"></i>
+
+      <div class="hero-bar">
+        <ul class="hero-features">
+          <li>
+            <i class="fas fa-map-marker-alt"></i>
+            <span>Ubicacion privilegiada</span>
+          </li>
+          <li>
+            <i class="fas fa-wifi"></i>
+            <span>Wifi gratis</span>
+          </li>
+          <li>
+            <i class="fas fa-bed"></i>
+            <span>Confort premium</span>
+          </li>
+        </ul>
+        <span class="hero-scroll">
+          <span>Explorar</span>
+          <i class="fas fa-chevron-down"></i>
+        </span>
       </div>
     </section>
 
@@ -243,6 +272,85 @@ import { BlurTextComponent } from '../../../shared/components/blur-text/blur-tex
       </section>
     }
 
+    @if (resenias().length) {
+      <section class="reviews">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-tag">Opiniones</span>
+            <h2>Lo que dicen los huéspedes</h2>
+            <p class="reviews-score">
+              <i class="fas fa-star"></i>
+              <strong>{{ promedioResenias() }}</strong> sobre {{ totalResenias() }} opiniones
+            </p>
+          </div>
+
+          <div class="reviews-layout">
+            <div class="reviews-wheel">
+              <app-option-wheel
+                [items]="reseniasNombres()"
+                [defaultSelected]="0"
+                [textColor]="'#a99a86'"
+                [activeColor]="'#1a1410'"
+                side="left"
+                [fontSize]="1.05"
+                [spacing]="1.5"
+                [curve]="1"
+                [tilt]="6"
+                [blur]="2"
+                [fade]="0.28"
+                [minOpacity]="0.06"
+                [smoothing]="200"
+                [inset]="0"
+                [loop]="true"
+                [draggable]="true"
+                ariaLabel="Elegí una reseña de huéspedes"
+                (onChange)="onReseniaChange($event)"
+              />
+            </div>
+
+            @if (reseniaActiva(); as r) {
+              <figure class="review-card">
+                <div class="review-stars" [attr.aria-label]="r.estrellas + ' de 5 estrellas'">
+                  @for (i of [1, 2, 3, 4, 5]; track i) {
+                    <i
+                      class="fa-star"
+                      [class.fas]="i <= r.estrellas"
+                      [class.far]="i > r.estrellas"
+                    ></i>
+                  }
+                </div>
+                <blockquote>{{ r.texto }}</blockquote>
+                <figcaption>
+                  <span class="review-author">{{ r.autor }}</span>
+                  <span class="review-via">Reseña de Google</span>
+                </figcaption>
+              </figure>
+            }
+          </div>
+
+          <div class="reviews-controls">
+            <button
+              type="button"
+              class="review-nav"
+              aria-label="Reseña anterior"
+              (click)="moverResenia(-1)"
+            >
+              <i class="fas fa-chevron-up"></i>
+            </button>
+            <button
+              type="button"
+              class="review-nav"
+              aria-label="Reseña siguiente"
+              (click)="moverResenia(1)"
+            >
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <span class="reviews-hint">Arrastrá o desplazá la rueda para ver más</span>
+          </div>
+        </div>
+      </section>
+    }
+
     <section class="cta-section">
       <div class="container cta-inner">
         <h2>Reserva ahora</h2>
@@ -252,120 +360,225 @@ import { BlurTextComponent } from '../../../shared/components/blur-text/blur-tex
     </section>
   `,
   styles: `
+    /* ------------------------------------------------------------------ hero
+       min-height, no height: asi el bloque crece si el contenido no entra en
+       pantalla en vez de desbordarlo. 100svh y no 100vh porque en mobile la
+       barra del navegador encoge el viewport y 100vh corta los ultimos px. */
     .hero {
       position: relative;
-      height: 92vh;
-      min-height: 550px;
+      min-height: 100svh;
       display: flex;
       align-items: center;
-      justify-content: center;
       overflow: hidden;
       margin-top: -72px;
       padding-top: 72px;
+      /* Negro puro: es el fondo real de la foto, asi que con object-contain los
+         laterales vacios se funden con el fondo y no se ve ningun marco. */
+      background: #000;
     }
-    .hero-bg {
+    /* Recinto de la foto. Los insets son el margen de seguridad: 88px arriba
+       para que la corona no choque con el navbar fijo de 72px, 84px abajo para
+       que la base no toque la barra de insignias. */
+    .hero-figure {
+      position: absolute;
+      inset: 88px 0 104px 0;
+      z-index: 0;
+    }
+    .hero-img {
+      width: 100%;
+      height: 100%;
+      /* contain, no cover: la pieza entra completa, corona y base. Con cover
+         el 1.78:1 del escritorio contra el 1.5 de la foto recortaba arriba y
+         abajo, y el scale(1.04) que venia puesto empeoraba el corte. */
+      object-fit: contain;
+      object-position: right center;
+    }
+    /* Dos capas: el radial garantiza legibilidad del texto, el linear funde la
+       pieza con el fondo oscuro. Se separan para poderlas ajustar por separado. */
+    .hero-scrim {
       position: absolute;
       inset: 0;
-      /* Foto arriba, gradiente de respaldo abajo: si la imagen no carga, se ve
-         el gradiente y no un rectangulo vacio. */
-      /* Rutas con slash inicial a proposito: las imagenes viven en public/ y se
-         sirven desde la raiz. Sin el slash, Angular las busca relativas al
-         componente y el build falla. */
-      background: url('/assets/hero.jpeg') center / cover no-repeat,
-                  linear-gradient(150deg, #3d2f26 0%, #5a4436 45%, #8a6a4f 100%);
-    }
-    .hero-bg::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(26, 20, 16, 0.7) 0%, rgba(26, 20, 16, 0.25) 50%, rgba(26, 20, 16, 0.6) 100%);
-    }
-    .hero-overlay {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse at center, transparent 40%, rgba(26, 20, 16, 0.35) 100%);
       z-index: 1;
+      background:
+        radial-gradient(
+          115% 90% at 18% 50%,
+          rgba(10, 7, 5, 0.88) 0%,
+          rgba(10, 7, 5, 0.55) 45%,
+          rgba(10, 7, 5, 0) 78%
+        ),
+        linear-gradient(
+          100deg,
+          rgba(10, 7, 5, 0.92) 0%,
+          rgba(10, 7, 5, 0.68) 32%,
+          rgba(10, 7, 5, 0.3) 62%,
+          rgba(10, 7, 5, 0) 100%
+        );
+    }
+    /* El bloque de abajo es claro, asi que el fundido va a crema. Con negro
+       queda un corte duro entre las dos secciones. */
+    .hero-fade {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 22%;
+      z-index: 1;
+      background: linear-gradient(to bottom, rgba(250, 246, 240, 0) 0%, var(--cream) 100%);
     }
     .hero-content {
       position: relative;
       z-index: 2;
-      text-align: center;
-      color: #fff;
-      max-width: 720px;
-      padding: 0 20px;
-      animation: heroIn 1.2s ease forwards;
+      width: 100%;
+      max-width: 1100px;
+      margin-inline: auto;
+      padding: 4rem 20px 7rem;
     }
-    @keyframes heroIn {
-      from { opacity: 0; transform: translateY(25px); }
-      to { opacity: 1; transform: translateY(0); }
+    .hero-inner {
+      max-width: 620px;
+      text-align: left;
     }
-    .hero-badge {
-      display: inline-block;
-      font-size: 0.75rem;
+    /* Sin recuadro: solo una linea fina antes del texto. */
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.7rem;
       text-transform: uppercase;
-      letter-spacing: 2px;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      padding: 5px 18px;
-      border-radius: 100px;
-      margin-bottom: 20px;
-      opacity: 0.85;
+      letter-spacing: 0.25em;
+      color: #c9b089;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+    }
+    .hero-kicker::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: rgba(212, 160, 23, 0.55);
+      flex: none;
     }
     .hero-title {
-      font-size: clamp(2.8rem, 7vw, 5rem);
+      font-family: var(--font-heading);
+      font-size: clamp(3rem, 7.5vw, 5.5rem);
+      font-weight: 400;
+      line-height: 1.02;
+      letter-spacing: -0.015em;
       color: #fff;
-      line-height: 1.05;
-      margin-bottom: 14px;
-      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+      margin-bottom: 1.25rem;
+    }
+    /* El BlurText parte el h1 en spans: el serif tiene que llegar hasta ahi. */
+    .hero-title ::ng-deep span {
+      font-family: var(--font-heading);
+      font-weight: 400;
     }
     .hero-tagline {
       font-size: 1.05rem;
-      opacity: 0.85;
-      margin-bottom: 32px;
       font-weight: 300;
-      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.75;
+      color: #d6cec3;
+      max-width: 46ch;
+      margin-bottom: 2.5rem;
     }
     .hero-actions {
       display: flex;
       gap: 14px;
-      justify-content: center;
       flex-wrap: wrap;
-      margin-bottom: 40px;
     }
-    .hero .btn-outline {
+    /* Sin border-radius: el corte recto es lo que separa esto de una landing
+       generica. */
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px 34px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      font-family: inherit;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background-color 0.35s ease, border-color 0.35s ease,
+        color 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+    }
+    .btn-hero--primary {
+      background: #c5a880;
+      color: #1a1410;
+      border-color: #c5a880;
+    }
+    .btn-hero--primary:hover {
+      background: #d8bd97;
+      border-color: #d8bd97;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(197, 168, 128, 0.26);
+    }
+    .btn-hero--ghost {
+      background: rgba(255, 255, 255, 0.06);
       color: #fff;
+      border-color: rgba(255, 255, 255, 0.22);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+    }
+    .btn-hero--ghost:hover {
+      background: rgba(255, 255, 255, 0.12);
       border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+    }
+    /* Barra inferior: separa con una linea, no con cajas. */
+    .hero-bar {
+      position: absolute;
+      inset: auto 0 0 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+      width: 100%;
+      max-width: 1100px;
+      margin-inline: auto;
+      padding: 1.5rem 20px 2rem;
     }
     .hero-features {
       display: flex;
-      gap: 24px;
-      justify-content: center;
+      align-items: center;
+      gap: 0;
+      list-style: none;
+      margin: 0;
+      padding: 0;
       flex-wrap: wrap;
-      font-size: 0.85rem;
-      opacity: 0.8;
+    }
+    .hero-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 1.75rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #a99c8c;
+    }
+    /* Separadores finos entre insignias: el primero y el ultimo no llevan. */
+    .hero-features li + li {
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
     }
     .hero-features i {
-      margin-right: 6px;
-      color: var(--gold-light);
+      font-size: 0.8rem;
+      color: #c9b089;
     }
     .hero-scroll {
-      position: absolute;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2;
-      color: rgba(255, 255, 255, 0.5);
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 4px;
-      font-size: 0.7rem;
-      letter-spacing: 2px;
+      gap: 10px;
+      flex: none;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
-      animation: bounce 2s infinite;
+      color: rgba(255, 255, 255, 0.45);
     }
-    @keyframes bounce {
-      0%, 100% { transform: translateX(-50%) translateY(0); }
-      50% { transform: translateX(-50%) translateY(6px); }
+    .hero-scroll i {
+      animation: heroScrollBounce 2.4s ease-in-out infinite;
+    }
+    @keyframes heroScrollBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
     }
 
     .features { padding: 80px 0 60px; background: var(--cream); }
@@ -593,6 +806,105 @@ import { BlurTextComponent } from '../../../shared/components/blur-text/blur-tex
       margin-bottom: 2px;
     }
 
+    /* ---------------------------------------------------------------- reviews */
+    .reviews {
+      padding: 80px 0 70px;
+      background: var(--cream);
+    }
+    .reviews .section-header { margin-bottom: 8px; }
+    .reviews-score {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    .reviews-score i { color: var(--gold); }
+    .reviews-score strong { color: var(--text-dark); }
+    .reviews-layout {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      align-items: center;
+      gap: 3rem;
+      margin-top: 2.5rem;
+    }
+    /* Alto fijo: la rueda posiciona cada nombre sobre una curva y necesita
+       saber cuanto alto tiene disponible. */
+    .reviews-wheel {
+      height: 400px;
+      position: relative;
+    }
+    .review-card {
+      margin: 0;
+      padding: 2.25rem 2rem;
+      background: var(--white);
+      border-radius: 18px;
+      border-left: 3px solid var(--gold);
+      box-shadow: var(--shadow-lg);
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .review-stars {
+      display: flex;
+      gap: 3px;
+      color: var(--gold);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    .review-stars .far { color: rgba(26, 20, 16, 0.18); }
+    .review-card blockquote {
+      margin: 0 0 1.25rem;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      font-weight: 300;
+      color: var(--text-dark);
+    }
+    .review-card figcaption {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .review-author {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text-dark);
+    }
+    .review-via {
+      font-size: 0.75rem;
+      color: var(--text-light);
+    }
+    .reviews-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 1.75rem;
+    }
+    .review-nav {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid rgba(26, 20, 16, 0.15);
+      background: var(--white);
+      color: var(--text-dark);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .review-nav:hover {
+      border-color: var(--gold);
+      color: var(--gold-dark);
+      transform: translateY(-2px);
+    }
+    .reviews-hint {
+      font-size: 0.78rem;
+      color: var(--text-light);
+      margin-left: 0.5rem;
+    }
+
     .cta-section {
       padding: 80px 0;
       background: var(--dark);
@@ -613,15 +925,88 @@ import { BlurTextComponent } from '../../../shared/components/blur-text/blur-tex
       .rooms-carousel { height: 430px; }
     }
     @media (max-width: 768px) {
-      .hero { min-height: 50vh; }
-      .hero-title { font-size: 2.25rem; }
-      .hero-actions { flex-direction: column; align-items: center; }
+      /* En vertical la foto 3:2 contenida deja una banda angosta. Va anclada
+         arriba, sobre negro, y el texto queda debajo: mejor que estirarla y
+         cortar la pieza. */
+      .hero-figure {
+        inset: 76px 0 auto 0;
+        height: 34vh;
+      }
+      .hero-img {
+        object-position: 50% 0%;
+      }
+      .hero-scrim {
+        background:
+          radial-gradient(120% 55% at 50% 22%, rgba(10, 7, 5, 0.55) 0%, rgba(10, 7, 5, 0.15) 70%, rgba(10, 7, 5, 0) 100%),
+          linear-gradient(180deg, rgba(10, 7, 5, 0.35) 0%, rgba(10, 7, 5, 0.75) 45%, rgba(10, 7, 5, 0.9) 100%);
+      }
+      .hero-content {
+        padding: 3rem 20px 9rem;
+      }
+      .hero-inner {
+        text-align: center;
+      }
+      .hero-kicker {
+        font-size: 0.62rem;
+        letter-spacing: 0.2em;
+      }
+      .hero-title { font-size: 2.6rem; }
+      .hero-tagline {
+        margin-inline: auto;
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+      }
+      .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn-hero { padding: 14px 24px; }
+      /* La barra pasa a columna y se apila arriba del scroll, que en mobile
+         compite por el mismo espacio. */
+      .hero-bar {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem 20px 1.5rem;
+      }
+      .hero-features {
+        justify-content: center;
+        gap: 0.5rem 0;
+      }
+      .hero-features li {
+        padding: 0 0.85rem;
+        font-size: 0.6rem;
+        letter-spacing: 0.08em;
+      }
+      .hero-features li + li {
+        border-left: none;
+      }
+      .hero-features li:not(:last-child)::after {
+        content: '';
+        display: inline-block;
+        width: 1px;
+        height: 9px;
+        margin-left: 0.85rem;
+        background: rgba(255, 255, 255, 0.12);
+        vertical-align: middle;
+      }
+      .hero-scroll { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-scroll i { animation: none; }
+      .btn-hero { transition: none; }
+    }
+    @media (max-width: 768px) {
       .services-carousel { height: 400px; margin-inline: -0.5rem; }
       .rooms-carousel { height: 340px; }
       .rooms-foco { flex-direction: column; align-items: flex-start; }
       .rooms-foco-accion { width: 100%; justify-content: space-between; }
       .hotel-details { grid-template-columns: 1fr; }
       .border-glow-card__content { padding: 1.75rem 1.25rem; }
+      .reviews-layout { grid-template-columns: 1fr; gap: 1.5rem; }
+      .reviews-wheel { height: 260px; }
+      .review-card { padding: 1.75rem 1.25rem; }
+      .reviews-hint { display: none; }
     }
   `
 })
@@ -629,6 +1014,9 @@ export class HomeComponent implements OnInit {
   private hotelService = inject(HotelService);
   private habitacionService = inject(HabitacionService);
   private imagenes = inject(HabitacionImagenService);
+
+  /** Necesario para mover la rueda desde los botones prev/next. */
+  readonly optionWheel = viewChild(OptionWheelComponent);
 
   hotel = signal<Hotel | null>(null);
   totalHabitaciones = signal(0);
@@ -654,16 +1042,50 @@ export class HomeComponent implements OnInit {
 
   /** Servicios del hotel mostrados en el carrusel circular. */
   serviciosItems: CircularCarouselItem[] = [
-    { src: '/assets/svc-patagonia.jpg', alt: 'Paisaje de la Patagonia', title: 'Ubicación', subtitle: 'En el corazón de la Patagonia, con acceso a los principales atractivos.' },
-    { src: '/assets/svc-desayuno.jpg', alt: 'Desayuno dentro de la habitación', title: 'Desayuno en la habitación', subtitle: 'Pava eléctrica, jarra con agua potable, té, café y galletitas.' },
-    { src: '/assets/svc-habitacion.jpg', alt: 'Habitación del hotel', title: 'Confort', subtitle: 'Habitaciones modernas y equipadas para una estadía inolvidable.' },
-    { src: '/assets/svc-parking.jpg', alt: 'Estacionamiento del hotel', title: 'Estacionamiento', subtitle: 'Incluido en el precio de tu estadía.' },
+    { src: '/assets/ubicacion.jpg', alt: 'Ubicación del hotel sobre la ruta', title: 'Ubicación', subtitle: 'En el corazón de la Patagonia, con acceso a los principales atractivos.' },
+    { src: '/assets/desayuno.jpg', alt: 'Desayuno dentro de la habitación', title: 'Desayuno en la habitación', subtitle: 'Pava eléctrica, jarra con agua potable, té, café y galletitas.' },
+    { src: '/assets/confort.jpg', alt: 'Habitación del hotel', title: 'Confort', subtitle: 'Habitaciones modernas y equipadas para una estadía inolvidable.' },
+    { src: '/assets/estacionamiento.jpeg', alt: 'Estacionamiento del hotel', title: 'Estacionamiento', subtitle: 'Incluido en el precio de tu estadía.' },
     { src: '/assets/svc-wifi.jpg', alt: 'Conexión wifi', title: 'Wifi gratis', subtitle: 'Conexión inalámbrica de alta velocidad en todo el hotel.' },
     { src: '/assets/svc-atencion.jpg', alt: 'Recepción del hotel', title: 'Atención', subtitle: 'Un equipo dedicado a hacer que te sientas como en casa.' },
   ];
 
   onCarouselChange({ item }: { index: number; item: DepthCarouselItem }) {
     this.habFoco.set((item['hab'] as Habitacion | undefined) ?? null);
+  }
+
+  /* ------------------------------------------------------------- reviews */
+  resenias = signal<Resenia[]>(RESENIAS);
+  reseniaIdx = signal(0);
+
+  /** Nombres para el OptionWheel: son los items de la rueda. */
+  reseniasNombres = computed(() => this.resenias().map((r) => r.autor));
+
+  /** La reseña que se muestra en la tarjeta, sincronizada con la rueda. */
+  reseniaActiva = computed(() => this.resenias()[this.reseniaIdx()] ?? null);
+
+  /** 3.8 sobre 199, segun el resumen de Google Maps. Sin datos, no promedia. */
+  readonly PUNTUACION_GOOGLE = 3.8;
+  readonly TOTAL_OPINIONES = 199;
+
+  totalResenias() {
+    return this.TOTAL_OPINIONES;
+  }
+
+  promedioResenias() {
+    return this.PUNTUACION_GOOGLE.toFixed(1);
+  }
+
+  onReseniaChange({ index }: { index: number; item: string }) {
+    this.reseniaIdx.set(index);
+  }
+
+  /** Botones prev/next: con loop:true siempre hay una reseña a la que moverse. */
+  moverResenia(delta: number) {
+    const n = this.resenias().length;
+    if (!n) return;
+    this.reseniaIdx.set((this.reseniaIdx() + delta + n) % n);
+    this.optionWheel()?.select(this.reseniaIdx());
   }
 
 

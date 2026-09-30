@@ -1,0 +1,27 @@
+<div
+  #rootRef
+  [class]="'option-wheel ' + (side() === 'right' ? 'option-wheel--right ' : '') + (dragging() ? 'option-wheel--dragging ' : '') + className()"
+  role="listbox"
+  tabindex="0"
+  [attr.aria-label]="ariaLabel()"
+  [style.--ow-text-color]="textColor()"
+  [style.--ow-active-color]="activeColor()"
+  [style.--ow-font-size]="fontSize() + 'rem'"
+  [style.--ow-inset]="inset() + 'px'"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerEnd()"
+  (pointercancel)="onPointerEnd()"
+  (keydown)="onKeyDown($event)"
+>
+  @for (item of items(); track $index; let i = $index) {
+    <div
+      [class]="'option-wheel__item ' + (selectedIndex() === i ? 'option-wheel__item--selected' : '')"
+      role="option"
+      [attr.aria-selected]="selectedIndex() === i"
+      (click)="onItemClick(i)"
+    >
+      {{ item }}
+    </div>
+  }
+</div>
