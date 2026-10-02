@@ -116,7 +116,8 @@ export const DOCUMENTOS: Record<string, LegalDoc> = {
         cuerpo: [
           'Los precios publicados son por habitacion y por noche, en pesos argentinos, e incluyen los servicios indicados en la pagina de la habitacion.',
           'Los adicionales que no figuren publicados, como el desayuno, se cobran al momento del ingreso.',
-          'El medio de pago online se procesa a traves de Mercado Pago. El hotel nunca te pide el numero de tarjeta ni la clave de la misma por correo, mensaje o telefono.',
+          'El hotel cobra por transferencia bancaria (alias) o en efectivo al momento del ingreso o de la salida. No aceptamos tarjeta y nunca te vamos a pedir el numero de tarjeta ni la clave de la misma por correo, mensaje o telefono.',
+          'Cuando registras un pago por alias, el hotel lo verifica y te confirmamos por WhatsApp. Recien ahi la reserva queda cubierta.',
           'Los precios pueden variar. La tarifa que te aplica es la que estaba publicada en el momento en que confirmaste la reserva.',
         ],
       },
@@ -251,6 +252,7 @@ export const DOCUMENTOS: Record<string, LegalDoc> = {
           'Los reembolsos se efectuan con el mismo metodo de pago con el que abonaste.',
           'El plazo depende de la entidad: hasta 10 dias habiles en tarjeta y hasta 5 dias habiles en transferencia, contados desde la aprobacion por el hotel.',
           'El hotel no retiene ni cobra comisiones por el reembolso.',
+          'Como solo aceptamos alias o efectivo, el reembolso se hace por transferencia a la misma cuenta de la que recibiste el pago.',
         ],
       },
       {

@@ -24,6 +24,9 @@
   --text: #3d322b;
   --text-light: #7a6b60;
   --border: #e5ddd5;
+  /* Borde con mas contraste que --border, para elementos que necesitan
+     delinearse sobre superficies claras sin recurriro al color del texto. */
+  --border-strong: #c9bcae;
   --success: #2e7d32;
   --error: #c62828;
   --warning: #f57f17;
@@ -141,13 +144,31 @@ small { font-size: 0.875rem; color: var(--text-light); }
   border: none;
 }
 
+/* btn-outline: fondo transparente con borde y texto oscuros.
+   Antes era color #fff con borde rgba(255,255,255,.4), que esta disenado para
+   botones sobre fondo oscuro (hero, footer). En las cards claras del admin
+   eso dejaba el texto blanco sobre blanco: boton invisible. */
 .btn-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--border-strong);
+}
+
+.btn-outline:hover {
+  color: var(--gold-btn);
+  border-color: var(--gold-btn);
+  background: rgba(184, 134, 11, 0.07);
+  opacity: 1;
+}
+
+/* Variante para fondo oscuro, donde el borde claro si se ve. */
+.btn-outline-light {
   background: transparent;
   color: #fff;
   border: 1.5px solid rgba(255, 255, 255, 0.4);
 }
 
-.btn-outline:hover {
+.btn-outline-light:hover {
   border-color: #fff;
   background: rgba(255, 255, 255, 0.08);
   opacity: 1;

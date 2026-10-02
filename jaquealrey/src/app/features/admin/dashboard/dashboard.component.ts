@@ -22,6 +22,8 @@ import { AuthService } from '../../../core/services/auth.service';
           <span class="app-bar-sep"></span>
           <a routerLink="/admin" class="app-bar-link">Panel</a>
           <a routerLink="/admin/reservas" class="app-bar-link">Reservas</a>
+          <a routerLink="/admin/calendario" class="app-bar-link">Calendario</a>
+          <a routerLink="/admin/pagos" class="app-bar-link">Pagos</a>
           <a routerLink="/admin/habitaciones" class="app-bar-link">Habitaciones</a>
           <a routerLink="/admin/historial" class="app-bar-link">Historial</a>
           <button type="button" class="app-bar-salir" (click)="logout()">Salir</button>
@@ -57,6 +59,18 @@ import { AuthService } from '../../../core/services/auth.service';
               <div class="card-body action-body">
                 <span class="action-icon"><i class="fas fa-clipboard-list"></i></span>
                 <span class="action-label">Ver Reservas</span>
+              </div>
+            </a>
+            <a routerLink="/admin/calendario" class="card action-card">
+              <div class="card-body action-body">
+                <span class="action-icon"><i class="fas fa-chess-pawn"></i></span>
+                <span class="action-label">Calendario</span>
+              </div>
+            </a>
+            <a routerLink="/admin/pagos" class="card action-card">
+              <div class="card-body action-body">
+                <span class="action-icon"><i class="fas fa-money-bill-transfer"></i></span>
+                <span class="action-label">Pagos e Ingresos</span>
               </div>
             </a>
             <a routerLink="/admin/habitaciones" class="card action-card">
@@ -244,7 +258,13 @@ export class DashboardComponent implements OnInit {
           this.stats.set([
             { icon: 'fas fa-clipboard-list', value: res.data.reservas_activas, label: 'Reservas Activas' },
             { icon: 'fas fa-calendar-days', value: res.data.reservas_proximas_7_dias, label: 'Próximos 7 días' },
-            { icon: 'fas fa-sack-dollar', value: '$' + res.data.ingresos_mes_actual.toLocaleString('es-AR'), label: 'Ingresos del Mes' },
+            { icon: 'fas fa-file-invoice-dollar', value: '$' + res.data.facturado_mes_actual.toLocaleString('es-AR'), label: 'Facturado del Mes' },
+            { icon: 'fas fa-sack-dollar', value: '$' + res.data.cobrado_mes_actual.toLocaleString('es-AR'), label: 'Cobrado del Mes' },
+            {
+              icon: 'fas fa-hand-holding-dollar',
+              value: '$' + res.data.a_cobrar_mes.toLocaleString('es-AR'),
+              label: 'Pendiente de Cobro',
+            },
             { icon: 'fas fa-users', value: res.data.total_clientes, label: 'Total Clientes' },
             { icon: 'fas fa-bed', value: res.data.habitaciones_activas, label: 'Habitaciones Activas' },
           ]);

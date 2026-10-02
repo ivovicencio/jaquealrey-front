@@ -27,7 +27,7 @@ import { RESENIAS, Resenia } from './resenias.data';
       <div class="hero-figure">
         <img
           class="hero-img"
-          src="/assets/hero2-web.jpg"
+          src="/assets/nuevohero.png"
           alt="Rey blanco de ajedrez"
           fetchpriority="high"
           decoding="async"

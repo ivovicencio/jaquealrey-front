@@ -417,7 +417,16 @@ export class ReservaFormComponent implements OnInit {
       next: (res) => {
         if (res.status === '1' && res.data?.codigo) {
           this.toast.success('¡Reserva creada exitosamente!');
-          this.router.navigate(['/reserva/exito', res.data.codigo]);
+          // El hotel cobra por transferencia, asi que despues del formulario va
+          // el paso de pago: ahi ve el alias y avisa que ya transfirio. El email
+          // y el total van por el estado del router y no por la query string, para
+          // no dejar el email en el historial del navegador ni en el referer.
+          this.router.navigate(['/reserva/pagar', res.data.codigo], {
+            state: {
+              email: this.form.email,
+              precio_total: Number(res.data.precio_total ?? 0),
+            },
+          });
         } else {
           this.error.set(res.msg || 'Error al crear la reserva.');
           this.toast.error('Error al crear la reserva.');

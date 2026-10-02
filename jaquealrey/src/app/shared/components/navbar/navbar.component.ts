@@ -1,9 +1,9 @@
 import { Component, inject, signal, computed, effect, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { RouterLink, Router, NavigationEnd } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
-import { obtenerNotificaciones } from '../../../core/services/notification.service';
 import { FlowingMenuComponent } from '../flowing-menu/flowing-menu.component';
 import { FlowingMenuItem } from '../flowing-menu/flowing-menu.model';
+import { AuthService } from '../../../core/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { filter } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 
@@ -165,7 +165,7 @@ import { Subscription } from 'rxjs';
     }
     .fullmenu-close:hover { background: rgba(255, 255, 255, 0.12); }
     /* min-height:0 es lo que deja que los items repartan la pantalla en vez de
-       desbordar cuando son varios (admin suma Panel y Salir). */
+       desbordar cuando son varios (con sesion de admin se suman Panel y Salir). */
     .fullmenu-body {
       display: block;
       flex: 1 1 auto;
@@ -178,47 +178,95 @@ import { Subscription } from 'rxjs';
   `
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  authService = inject(AuthService);
   private router = inject(Router);
+  private auth = inject(AuthService);
+  private notifications = inject(NotificationService);
+
   scrolled = signal(false);
   menuOpen = signal(false);
   isHome = signal(true);
 
   private routerSub!: Subscription;
 
-  /** Items del menu visual. Las fotos salen de /assets, las que ya usa el home. */
-  menuItems = computed<FlowingMenuItem[]>(() => {
-    const items: FlowingMenuItem[] = [
-      { link: '/', text: 'Inicio', image: '/assets/hero.jpeg' },
-      { link: '/habitaciones', text: 'Habitaciones', image: '/assets/nosequehabitaciones1.jpeg' },
-      { link: '/buscar-disponibilidad', text: 'Buscar disponibilidad', image: '/assets/departamento.jpeg' },
-      { link: '/consultar-reserva', text: 'Consultar mi reserva', image: '/assets/recepcion.jpeg' },
-    ];
-    if (this.authService.isAdmin()) {
-      items.push({ link: '/admin', text: 'Panel', image: '/assets/mismodepartamento.jpeg' });
-      items.push({ link: '/salir', text: 'Salir', image: '/assets/nosequehabitaciones3.jpeg' });
-    }
-    return items;
-  });
-
+  /**
+   * El menu es a pantalla completa: sin esto el scroll de fondo se mueve
+   * por detras mientras esta abierto.
+   */
   constructor() {
-    // El menu es a pantalla completa: sin esto el scroll de fondo se mueve
-    // por detras mientras esta abierto.
     effect(() => {
       const abierto = this.menuOpen();
       document.body.style.overflow = abierto ? 'hidden' : '';
     });
   }
 
-  /** El click lo intercepta el navbar: el menu no sabe de rutas ni de logout. */
-  onMenuNavigate({ ev, link }: { ev: MouseEvent; link: string }) {
+  /**
+   * Items del menu visual. Las fotos salen de /assets, las que ya usa el home.
+   *
+   * `Panel` y `Salir` solo existen si hay un admin con sesion. Para el visitante
+   * que llega a reservar, el menu tiene que hablar de habitaciones y no del
+   * backoffice: ver un "Salir" en la portada hacia que el sitio publico y el
+   * panel son la misma cosa.
+   *
+   * Para el admin si hacen falta: la barra propia del panel (app-bar) solo
+   * aparece cuando la app corre instalada como PWA, asi que en el navegador
+   * comun este menu es el unico lugar donde cerrar sesion.
+   */
+  menuItems = computed<FlowingMenuItem[]>(() => {
+    const items: FlowingMenuItem[] = [
+      { link: '/', text: 'Inicio', image: '/assets/nuevohero.png' },
+      { link: '/habitaciones', text: 'Habitaciones', image: '/assets/nosequehabitaciones1.jpeg' },
+      { link: '/buscar-disponibilidad', text: 'Buscar disponibilidad', image: '/assets/departamento.jpeg' },
+      { link: '/consultar-reserva', text: 'Consultar mi reserva', image: '/assets/recepcion.jpeg' },
+    ];
+
+    if (this.esAdmin()) {
+      items.push({ link: '/admin', text: 'Panel', image: '/assets/rey.jpg' });
+      items.push({ link: '#', text: 'Salir', image: '/assets/recepcion.jpeg', accion: 'logout' });
+    }
+
+    return items;
+  });
+
+  /**
+   * `AuthService.isAdmin()` lee el token del localStorage y no es un signal, asi
+   * que sola no alcanza para redibujar el menu. Este tick es lo que dispara el
+   * recalculo: se mueve al cambiar de ruta y al abrir el menu, que es
+   * justo cuando el item puede aparecer o desaparecer.
+   */
+  private readonly sesionTick = signal(0);
+  readonly esAdmin = computed(() => {
+    this.sesionTick();
+    return this.auth.isAdmin();
+  });
+
+  /** El click lo intercepta el navbar: el menu no sabe de rutas. */
+  onMenuNavigate({ ev, link, accion }: { ev: MouseEvent; link: string; accion?: 'logout' }) {
     ev.preventDefault();
-    if (link === '/salir') {
+    this.closeMenu();
+
+    if (accion === 'logout') {
       this.logout();
       return;
     }
+
     this.router.navigateByUrl(link);
-    this.closeMenu();
+  }
+
+  /**
+   * Cierra sesion contra el servidor y recien ahi borra el token local.
+   *
+   * El orden importa: si se limpiara el localStorage primero y el POST fallara,
+   * el token seguiria valido en el servidor y el admin tendria que recargar
+   * para "volver a entrar". `AuthService.logout()` limpia igual en el `tap`
+   * porque el `catchError` lo convierte en exito, asi que la sesion local nunca
+   * queda viva.
+   */
+  private logout(): void {
+    this.auth.logout().subscribe(() => {
+      this.notifications.disconnect();
+      this.sesionTick.update((v) => v + 1);
+      this.router.navigateByUrl('/login');
+    });
   }
 
   @HostListener('document:keydown.escape')
@@ -233,6 +281,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
       .subscribe((e) => {
         this.checkHome(e.urlAfterRedirects || e.url);
         this.closeMenu();
+        // El login borra o escribe el token sin pasar por el router con una razon
+        // clara, asi que cada navegacion es una occasion de reevaluar el menu.
+        this.sesionTick.update((v) => v + 1);
       });
   }
 
@@ -251,18 +302,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   toggleMenu() {
+    // Antes de abrir: el menu decide si muestra Panel y Salir recien al abrirse.
+    this.sesionTick.update((v) => v + 1);
     this.menuOpen.update((v) => !v);
   }
 
   closeMenu() {
     this.menuOpen.set(false);
-  }
-
-  logout() {
-    this.closeMenu();
-    obtenerNotificaciones()?.disconnect();
-    // El servicio ya limpio el token local antes de emitir, asi que acá el
-    // panel ya no queda logueado aunque el POST al back haya fallado.
-    this.authService.logout().subscribe(() => this.router.navigate(['/']));
   }
 }

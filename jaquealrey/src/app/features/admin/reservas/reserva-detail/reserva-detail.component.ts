@@ -4,7 +4,9 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../../core/services/admin.service';
 import { ReservaService } from '../../../../core/services/reserva.service';
+import { PdfService } from '../../../../core/services/pdf.service';
 import { Reserva } from '../../../../core/models/reserva.model';
+import { PagosReserva } from '../../../../core/models/pago.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 
@@ -14,10 +16,15 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
   imports: [FormsModule, RouterLink, CurrencyArPipe, DatePipe],
   template: `
     <div class="container admin-page">
-      <div class="admin-header">
-        <a routerLink="/admin/reservas" class="back-link"><i class="fas fa-arrow-left"></i> Volver a Reservas</a>
-        <h1 class="page-title">Detalle de Reserva</h1>
-      </div>
+<div class="admin-header">
+          <a routerLink="/admin/reservas" class="back-link"><i class="fas fa-arrow-left"></i> Volver a Reservas</a>
+          <div class="title-row">
+            <h1 class="page-title">Detalle de Reserva</h1>
+            <button type="button" class="btn btn-outline" (click)="exportarComprobante()">
+              <i class="fas fa-file-pdf"></i> Comprobante PDF
+            </button>
+          </div>
+        </div>
 
       @if (loading()) {
         <div class="loading-state">
@@ -49,10 +56,21 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                   <span class="info-label">Huéspedes</span>
                   <span class="info-value">{{ reserva()!.huespedes }}</span>
                 </div>
-                <div class="info-row">
-                  <span class="info-label">Precio Total</span>
-                  <span class="info-value price">{{ reserva()!.precio_total | currencyAr }}</span>
-                </div>
+<div class="info-row">
+                    <span class="info-label">Precio Total</span>
+                    <span class="info-value price">{{ reserva()!.precio_total | currencyAr }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Pagado</span>
+                    <span class="info-value">{{ (pagos()?.total_pagado ?? 0) | currencyAr }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Saldo</span>
+                    <span
+                      class="info-value"
+                      [class.saldo-pendiente]="(pagos()?.saldo ?? 0) > 0.01"
+                    >{{ (pagos()?.saldo ?? 0) | currencyAr }}</span>
+                  </div>
                 @if (reserva()!.notas) {
                   <div class="info-row">
                     <span class="info-label">Notas</span>
@@ -133,6 +151,89 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
             </div>
           </div>
         </div>
+
+        <div class="card status-card">
+          <div class="card-header">
+            <h3>Pagos</h3>
+            <button type="button" class="btn btn-outline btn-sm" (click)="abrirFormPago()">
+              <i class="fas fa-plus"></i> Registrar pago
+            </button>
+          </div>
+          <div class="card-body">
+            @if (formPagoAbierto()) {
+              <div class="pago-form">
+                <div class="form-group">
+                  <label class="form-label">Monto</label>
+                  <input class="form-input" type="number" min="1" step="0.01"
+                    [(ngModel)]="pagoMonto" placeholder="0.00" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Método</label>
+                  <select class="form-select" [(ngModel)]="pagoMetodo">
+                    <option value="alias">Transferencia (alias)</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Estado</label>
+                  <select class="form-select" [(ngModel)]="pagoEstado">
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Pendiente">Pendiente</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Referencia (opcional)</label>
+                  <input class="form-input" [(ngModel)]="pagoReferencia"
+                    placeholder="Nº de comprobante" />
+                </div>
+                <div class="pago-form-actions">
+                  <button type="button" class="btn btn-outline" (click)="formPagoAbierto.set(false)">
+                    Cancelar
+                  </button>
+                  <button type="button" class="btn btn-primary" (click)="guardarPago()" [disabled]="guardandoPago()">
+                    {{ guardandoPago() ? 'Guardando...' : 'Guardar pago' }}
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (pagos(); as p) {
+              @if (p.pagos.length) {
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Método</th>
+                        <th>Referencia</th>
+                        <th>Monto</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (pg of p.pagos; track pg.id) {
+                        <tr>
+                          <td>{{ pg.fecha_pago ? (pg.fecha_pago | date:'dd/MM/yyyy') : '-' }}</td>
+                          <td>{{ pg.metodo }}</td>
+                          <td>{{ pg.referencia || '-' }}</td>
+                          <td>{{ pg.monto | currencyAr }}</td>
+                          <td>
+                            <span [class]="'badge ' + badgePago(pg.estado)">{{ pg.estado }}</span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <p class="sin-datos">Todavia no hay pagos registrados para esta reserva.</p>
+              }
+            } @else {
+              <p class="sin-datos">Cargando pagos...</p>
+            }
+          </div>
+        </div>
       }
     </div>
   `,
@@ -207,6 +308,41 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
     }
 
     .status-card { margin-bottom: 1.25rem; }
+    .status-card .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .status-card .card-header h3 { margin: 0; font-size: 1rem; }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .saldo-pendiente { color: #a1443c; font-weight: 700; }
+    .sin-datos { color: var(--text-light); font-size: 0.875rem; margin: 0; }
+    .table-responsive { overflow-x: auto; }
+
+    .pago-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .pago-form-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      grid-column: 1 / -1;
+      justify-content: flex-end;
+    }
     .status-form {
       display: flex;
       flex-direction: column;
@@ -230,11 +366,20 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 export class AdminReservaDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private adminService = inject(AdminService);
+  private pdf = inject(PdfService);
   private toast = inject(ToastService);
 
   reserva = signal<Reserva | null>(null);
+  pagos = signal<PagosReserva | null>(null);
   loading = signal(true);
   updating = signal(false);
+
+  formPagoAbierto = signal(false);
+  guardandoPago = signal(false);
+  pagoMonto: number | null = null;
+  pagoMetodo = 'alias';
+  pagoEstado = 'Confirmado';
+  pagoReferencia = '';
 
   nuevoEstado = '';
   notasCambio = '';
@@ -262,6 +407,80 @@ export class AdminReservaDetailComponent implements OnInit {
         this.loading.set(false);
       },
     });
+
+    // Los pagos se piden en paralelo al detalle: son endpoints distintos y el
+    // panel ya muestra el saldo sin esperar a que termine el primero.
+    this.loadPagos(id);
+  }
+
+  loadPagos(id: number) {
+    this.adminService.getPagosReserva(id).subscribe({
+      next: (res) => {
+        if (res.status === '1') this.pagos.set(res.data);
+      },
+      error: () => this.toast.error('Error al cargar los pagos'),
+    });
+  }
+
+  abrirFormPago() {
+    const saldo = this.pagos()?.saldo ?? this.reserva()?.precio_total ?? 0;
+    this.pagoMonto = saldo > 0 ? Number(saldo) : null;
+    this.pagoReferencia = '';
+    this.formPagoAbierto.set(true);
+  }
+
+  guardarPago() {
+    const r = this.reserva();
+    const monto = Number(this.pagoMonto);
+    if (!r) return;
+    if (!Number.isFinite(monto) || monto <= 0) {
+      this.toast.error('El monto debe ser mayor a 0');
+      return;
+    }
+
+    this.guardandoPago.set(true);
+    this.adminService
+      .createPago({
+        reserva_id: r.id,
+        monto,
+        metodo: this.pagoMetodo,
+        estado: this.pagoEstado,
+        referencia: this.pagoReferencia || undefined,
+      })
+      .subscribe({
+        next: (res) => {
+          if (res.status === '1') {
+            this.toast.success('Pago registrado');
+            this.formPagoAbierto.set(false);
+            this.loadPagos(r.id);
+          }
+          this.guardandoPago.set(false);
+        },
+        error: (e) => {
+          this.toast.error(e?.error?.message ?? 'Error al registrar el pago');
+          this.guardandoPago.set(false);
+        },
+      });
+  }
+
+  exportarComprobante() {
+    const r = this.reserva();
+    if (!r) return;
+    try {
+      this.pdf.exportarComprobanteReserva(r, this.pagos()?.pagos ?? []);
+      this.toast.success('Comprobante generado');
+    } catch (e: any) {
+      this.toast.error('Error al generar el PDF: ' + (e?.message ?? 'desconocido'));
+    }
+  }
+
+  badgePago(estado: string): string {
+    switch (estado) {
+      case 'Confirmado': return 'badge-success';
+      case 'Pendiente': return 'badge-warning';
+      case 'Anulado': return 'badge-danger';
+      default: return 'badge';
+    }
   }
 
   updateEstadoOptions(estado: string) {

@@ -14,11 +14,12 @@ import { FlowingMenuItem } from './flowing-menu.model';
   template: `
     <div class="menu-wrap" [style.background-color]="bgColor()">
       <nav class="menu">
-        @for (item of items(); track item.link) {
+        @for (item of items(); track item.text) {
           <app-flowing-menu-item
             [link]="item.link"
             [text]="item.text"
             [image]="item.image"
+            [accion]="item.accion"
             [speed]="speed()"
             [textColor]="textColor()"
             [marqueeBgColor]="marqueeBgColor()"
@@ -54,5 +55,5 @@ export class FlowingMenuComponent {
   marqueeTextColor = input('#120F17');
   borderColor = input('#ffffff');
 
-  navegar = output<{ ev: MouseEvent; link: string }>();
+  navegar = output<{ ev: MouseEvent; link: string; accion?: 'logout' }>();
 }

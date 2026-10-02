@@ -18,6 +18,11 @@ export interface Reserva {
   cliente_apellido?: string;
   cliente_email?: string;
   cliente_telefono?: string;
+  // Solo vienen en los endpoints de panel (/api/admin/*), no en la consulta
+  // publica. Son la suma de los pagos confirmados y lo que queda por cobrar,
+  // calculados en el backend para no traer la tabla de pagos entera al listado.
+  pagado?: number;
+  saldo?: number;
 }
 
 export interface ReservaAdminList {

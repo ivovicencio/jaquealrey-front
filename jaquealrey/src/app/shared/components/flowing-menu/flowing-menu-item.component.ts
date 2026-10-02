@@ -72,6 +72,8 @@ export class FlowingMenuItemComponent implements OnDestroy {
   link = input.required<string>();
   text = input.required<string>();
   image = input.required<string>();
+  /** Si viene, el click no navega: el contenedor ejecuta la accion. */
+  accion = input<'logout'>();
   speed = input(15);
   textColor = input('#fff');
   marqueeBgColor = input('#fff');
@@ -79,7 +81,7 @@ export class FlowingMenuItemComponent implements OnDestroy {
   borderColor = input('#fff');
 
   /** Click delegado al contenedor: el menu no sabe de rutas ni de logout. */
-  navegar = output<{ ev: MouseEvent; link: string }>();
+  navegar = output<{ ev: MouseEvent; link: string; accion?: 'logout' }>();
 
   private itemRef = viewChild.required<ElementRef<HTMLElement>>('itemRef');
   // Opcionales a proposito: el marquee no se renderiza en celu ni con
@@ -156,7 +158,7 @@ export class FlowingMenuItemComponent implements OnDestroy {
   }
 
   onClick(ev: MouseEvent) {
-    this.navegar.emit({ ev, link: this.link() });
+    this.navegar.emit({ ev, link: this.link(), accion: this.accion() });
   }
 
   onEnter(ev?: MouseEvent) {

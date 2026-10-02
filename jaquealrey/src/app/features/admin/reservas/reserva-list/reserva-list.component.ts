@@ -8,6 +8,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { Reserva } from '../../../../core/models/reserva.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
+import { PdfService } from '../../../../core/services/pdf.service';
 
 @Component({
   selector: 'app-reserva-list',
@@ -39,6 +40,12 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
             <label class="form-label">Hasta</label>
             <input class="form-input" type="date" [(ngModel)]="filtroHasta" (change)="applyFilters()" />
           </div>
+          <div class="filter-actions">
+            <button type="button" class="btn btn-outline btn-sm" (click)="exportarPDF()" [disabled]="exportando()">
+              <i class="fas fa-file-pdf"></i>
+              {{ exportando() ? 'Generando...' : 'Exportar PDF' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -60,6 +67,8 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                   <th>Salida</th>
                   <th>Huéspedes</th>
                   <th>Precio</th>
+                  <th>Pagado</th>
+                  <th>Saldo</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
@@ -74,6 +83,14 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                     <td>{{ r.fecha_salida | date:'dd/MM/yyyy' }}</td>
                     <td>{{ r.huespedes }}</td>
                     <td>{{ r.precio_total | currencyAr }}</td>
+                    <td>{{ (r.pagado ?? 0) | currencyAr }}</td>
+                    <td>
+                      @if ((r.saldo ?? 0) > 0.01) {
+                        <span class="saldo-pendiente">{{ r.saldo | currencyAr }}</span>
+                      } @else {
+                        <span class="saldo-cobrado"><i class="fas fa-check"></i> Cobrado</span>
+                      }
+                    </td>
                     <td>
                       <span [class]="'badge ' + badgeClass(r.estado)">{{ r.estado }}</span>
                     </td>
@@ -84,7 +101,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="9" class="empty-state">No se encontraron reservas</td>
+                    <td colspan="11" class="empty-state">No se encontraron reservas</td>
                   </tr>
                 }
               </tbody>
@@ -119,6 +136,10 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       flex-wrap: wrap;
     }
     .filter-group { min-width: 160px; }
+    .filter-actions { margin-left: auto; }
+
+    .saldo-pendiente { color: #a1443c; font-weight: 600; }
+    .saldo-cobrado { color: #2e6b3f; font-size: 0.8125rem; }
 
     .loading-state {
       display: flex;
@@ -174,11 +195,13 @@ export class AdminReservaListComponent implements OnInit {
   private notifications = inject(NotificationService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
+  private pdf = inject(PdfService);
 
   reservas = signal<Reserva[]>([]);
   loading = signal(true);
   pagina = signal(1);
   totalPaginas = signal(1);
+  exportando = signal(false);
 
   filtroEstado = '';
   filtroDesde = '';
@@ -254,5 +277,33 @@ export class AdminReservaListComponent implements OnInit {
       case 'Completada': return 'badge-info';
       default: return 'badge';
     }
+  }
+
+  // Exporta lo que se esta viendo en pantalla, con los mismos filtros.
+  // Un PDF con el filtro de la pantalla es util; uno con todos los registros del
+  // hotel no lo es, porque el hotel quiere revisar el mes, no la vida entera.
+  exportarPDF() {
+    const lista = this.reservas();
+    if (!lista.length) {
+      this.toast.info('No hay reservas para exportar con estos filtros');
+      return;
+    }
+    this.exportando.set(true);
+    // Se deja un frame para que el boton muestre el estado "Generando..." antes
+    // de que jsPDF bloquee el hilo principal armando el archivo.
+    setTimeout(() => {
+      try {
+        this.pdf.exportarReservas(lista, {
+          estado: this.filtroEstado || undefined,
+          desde: this.filtroDesde || undefined,
+          hasta: this.filtroHasta || undefined,
+        });
+        this.toast.success('PDF generado');
+      } catch (e: any) {
+        this.toast.error('Error al generar el PDF: ' + (e?.message ?? 'desconocido'));
+      } finally {
+        this.exportando.set(false);
+      }
+    }, 50);
   }
 }

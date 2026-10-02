@@ -38,4 +38,16 @@ export class ReservaService {
       motivo,
     });
   }
+
+  /**
+   * Avisa que ya transfirio al alias. NO confirma la reserva: eso lo hace el
+   * admin cuando ve la plata. Solo deja el aviso para que el hotel sepa que
+   * tiene una reserva que revisar.
+   */
+  reportarPago(codigo: string, email: string): Observable<ApiResponse<Reserva>> {
+    return this.http.put<ApiResponse<Reserva>>(`${this.apiUrl}/reservas/reportar-pago`, {
+      codigo,
+      email,
+    });
+  }
 }

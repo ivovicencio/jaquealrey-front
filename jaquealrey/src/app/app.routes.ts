@@ -36,6 +36,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'reserva/pagar/:codigo',
+    loadComponent: () =>
+      import('./features/public/reserva/pagar-reserva/pagar-reserva.component').then(
+        (m) => m.PagarReservaComponent
+      ),
+  },
+  {
     path: 'reserva/exito/:codigo',
     loadComponent: () =>
       import('./features/public/reserva/reserva-exitosa/reserva-exitosa.component').then(
@@ -116,6 +123,18 @@ export const routes: Routes = [
     path: 'admin/historial',
     loadComponent: () =>
       import('./features/admin/historial/historial.component').then((m) => m.HistorialComponent),
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'admin/calendario',
+    loadComponent: () =>
+      import('./features/admin/calendario/calendario.component').then((m) => m.AdminCalendarioComponent),
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'admin/pagos',
+    loadComponent: () =>
+      import('./features/admin/pagos/pagos.component').then((m) => m.AdminPagosComponent),
     canActivate: [adminGuard],
   },
 
