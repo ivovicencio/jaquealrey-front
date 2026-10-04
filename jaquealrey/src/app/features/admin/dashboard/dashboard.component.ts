@@ -21,6 +21,8 @@ import { AuthService } from '../../../core/services/auth.service';
           </span>
           <span class="app-bar-sep"></span>
           <a routerLink="/admin" class="app-bar-link">Panel</a>
+          <a routerLink="/admin/hoy" class="app-bar-link">Hoy</a>
+          <a routerLink="/admin/walk-in" class="app-bar-link">Walk-in</a>
           <a routerLink="/admin/reservas" class="app-bar-link">Reservas</a>
           <a routerLink="/admin/calendario" class="app-bar-link">Calendario</a>
           <a routerLink="/admin/pagos" class="app-bar-link">Pagos</a>
@@ -55,6 +57,18 @@ import { AuthService } from '../../../core/services/auth.service';
         <div class="quick-actions">
           <h2>Acciones Rapidas</h2>
           <div class="actions-grid">
+            <a routerLink="/admin/hoy" class="card action-card">
+              <div class="card-body action-body">
+                <span class="action-icon"><i class="fas fa-sun"></i></span>
+                <span class="action-label">Hoy (recepción)</span>
+              </div>
+            </a>
+            <a routerLink="/admin/walk-in" class="card action-card">
+              <div class="card-body action-body">
+                <span class="action-icon"><i class="fas fa-user-plus"></i></span>
+                <span class="action-label">Walk-in</span>
+              </div>
+            </a>
             <a routerLink="/admin/reservas" class="card action-card">
               <div class="card-body action-body">
                 <span class="action-icon"><i class="fas fa-clipboard-list"></i></span>
@@ -93,7 +107,6 @@ import { AuthService } from '../../../core/services/auth.service';
   styles: `
     .admin-page { padding-top: 2rem; padding-bottom: 3rem; }
 
-    /* Barra propia de la app instalada: reemplaza la navbar publica. */
     .app-bar {
       display: flex;
       align-items: center;
@@ -212,7 +225,7 @@ import { AuthService } from '../../../core/services/auth.service';
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .actions-grid { grid-template-columns: 1fr; }
     }
-  `
+  `,
 })
 export class DashboardComponent implements OnInit {
   private adminService = inject(AdminService);
@@ -238,11 +251,18 @@ export class DashboardComponent implements OnInit {
       .onReservaActualizada()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.load());
+
+    this.notifications
+      .onSesionRevocada()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.authService.logout();
+        this.router.navigate(['/login']);
+      });
   }
 
   logout(): void {
     this.authService.logout();
-    this.notifications.disconnect();
     this.router.navigate(['/login']);
   }
 
@@ -258,8 +278,16 @@ export class DashboardComponent implements OnInit {
           this.stats.set([
             { icon: 'fas fa-clipboard-list', value: res.data.reservas_activas, label: 'Reservas Activas' },
             { icon: 'fas fa-calendar-days', value: res.data.reservas_proximas_7_dias, label: 'Próximos 7 días' },
-            { icon: 'fas fa-file-invoice-dollar', value: '$' + res.data.facturado_mes_actual.toLocaleString('es-AR'), label: 'Facturado del Mes' },
-            { icon: 'fas fa-sack-dollar', value: '$' + res.data.cobrado_mes_actual.toLocaleString('es-AR'), label: 'Cobrado del Mes' },
+            {
+              icon: 'fas fa-file-invoice-dollar',
+              value: '$' + res.data.facturado_mes_actual.toLocaleString('es-AR'),
+              label: 'Facturado del Mes',
+            },
+            {
+              icon: 'fas fa-sack-dollar',
+              value: '$' + res.data.cobrado_mes_actual.toLocaleString('es-AR'),
+              label: 'Cobrado del Mes',
+            },
             {
               icon: 'fas fa-hand-holding-dollar',
               value: '$' + res.data.a_cobrar_mes.toLocaleString('es-AR'),

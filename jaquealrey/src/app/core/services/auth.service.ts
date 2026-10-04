@@ -1,9 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of, tap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { AuthResponse, User } from '../models/user.model';
+import { NotificationService } from './notification.service';
 
 const TOKEN_KEY = 'jar_token';
 const USER_KEY = 'jar_user';
@@ -19,6 +20,7 @@ interface JwtPayload {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
+  private notificaciones = inject(NotificationService);
   private apiUrl = environment.apiUrl;
 
   login(email: string, password: string): Observable<ApiResponse<AuthResponse>> {
@@ -64,16 +66,28 @@ export class AuthService {
    * seguía entrando al panel. El backend mueve la marca de revocacion, con lo
    * cual quedan invalidados el token actual y todos los anteriores.
    *
-   * El borrado local va en tap, no en finalize: tap corre antes de que el
-   * suscriptor reciba el valor, asi que cuando la UI naveja ya no queda token.
-   * El interceptor ya manda el header, no hace falta armarlo a mano.
+   * Es imperativo a proposito, y no un Observable que el llamador tenga que
+   * suscribir. Antes devolvia el Observable y tres de los cuatro llamadores
+   * (dashboard, hoy y walk-in) lo invocaban sin suscribirse: sin suscriptor no
+   * hay peticion, asi que el POST nunca salia y el logout no revocaba nada. Un
+   * metodo que se puede llamar "en serio" sin hacer nada es una trampa; este se
+   * suscribe solo y por eso no puede quedar colgado.
+   *
+   * El socket se cierra antes de borrar el token: si se tirara despues, el
+   * backend cortaria la conexion por su cuenta, pero al revés la pestana puede
+   * seguir recibiendo eventos en los milisegundos entre la respuesta y el
+   * borrado.
    */
-  logout(): Observable<unknown> {
-    return this.http.post(`${this.apiUrl}/auth/logout`, {}).pipe(
-      map(() => null),
-      catchError(() => of(null)),
-      tap(() => this.clearSession())
-    );
+  logout(): void {
+    this.notificaciones.disconnect();
+    this.clearSession();
+
+    this.http.post(`${this.apiUrl}/auth/logout`, {}).subscribe({
+      next: () => undefined,
+      // Si el POST falla, la sesion local ya esta limpia. Un logout que no
+      // borra el token porque la red cayo seria peor que un token sin revocar.
+      error: () => undefined,
+    });
   }
 
   private clearSession(): void {

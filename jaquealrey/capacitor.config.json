@@ -1,0 +1,6 @@
+{
+  "appId": "com.jaquealrey.app",
+  "appName": "Jaque al Rey",
+  "webDir": "dist/jaquealrey/browser",
+  "bundledWebRuntime": false
+}

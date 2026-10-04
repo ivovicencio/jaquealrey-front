@@ -28,6 +28,7 @@ import { PdfService } from '../../../../core/services/pdf.service';
               <option value="">Todos</option>
               <option value="Pendiente">Pendiente</option>
               <option value="Confirmada">Confirmada</option>
+              <option value="En_Casa">En casa</option>
               <option value="Cancelada">Cancelada</option>
               <option value="Completada">Completada</option>
             </select>
@@ -272,6 +273,7 @@ export class AdminReservaListComponent implements OnInit {
   badgeClass(estado: string): string {
     switch (estado) {
       case 'Confirmada': return 'badge-success';
+      case 'En_Casa': return 'badge-success';
       case 'Pendiente': return 'badge-warning';
       case 'Cancelada': return 'badge-danger';
       case 'Completada': return 'badge-info';

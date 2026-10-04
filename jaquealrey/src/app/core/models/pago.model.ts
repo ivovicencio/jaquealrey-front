@@ -23,6 +23,10 @@ export interface IngresosMes {
 }
 
 export interface SaldoReserva {
+  // Sin este id el formulario de cobro del panel mandaba `reserva_id: undefined`,
+  // JSON.stringify lo omitía y el backend contestaba 400 siempre. Es el flujo
+  // "Reservas con saldo", o sea el que se usa para cobrar.
+  id: number;
   codigo: string;
   precio_total: number;
   pagado: number;

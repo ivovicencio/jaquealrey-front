@@ -7,7 +7,9 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:pdf": "node tests/pdf-smoke.js"
+    "test:pdf": "node tests/pdf-smoke.js",
+    "electron:start": "electron .",
+    "electron:build": "electron-builder"
   },
   "private": true,
   "packageManager": "npm@11.9.0",
