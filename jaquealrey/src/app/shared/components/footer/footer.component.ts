@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { DATOS_RESPONSABLE } from '../../../features/public/legal/legal-content';
 
 @Component({
   selector: 'app-footer',
@@ -10,44 +11,44 @@ import { RouterLink } from '@angular/router';
       <div class="container footer-grid">
         <div class="footer-brand">
           <span class="logo-icon"><i class="fas fa-chess-king"></i></span>
-          <h3>Hotel Jaque al Rey</h3>
-          <p>Tu refugio en el corazon de la Patagonia. Comodidad, calidez y hospitalidad en cada estancia.</p>
-          <div class="footer-social">
-            <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-            <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-            <a href="#" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-          </div>
+          <h3>{{ datos.nombre }}</h3>
+          <p>Hotel en Piedra del Águila, Neuquén.</p>
         </div>
         <div class="footer-links">
-          <h4>Enlaces</h4>
+          <h4>Reservas</h4>
           <ul>
             <li><a routerLink="/habitaciones">Habitaciones</a></li>
-            <li><a routerLink="/buscar-disponibilidad">Buscar Disponibilidad</a></li>
-            <li><a routerLink="/consultar-reserva">Consultar mi Reserva</a></li>
-            <li><a routerLink="/reembolsos">Reembolsos y Cancelaciones</a></li>
+            <li><a routerLink="/buscar-disponibilidad">Disponibilidad</a></li>
+            <li><a routerLink="/consultar-reserva">Consultar mi reserva</a></li>
+            <li><a routerLink="/reembolsos">Cancelaciones</a></li>
           </ul>
         </div>
         <div class="footer-links">
-          <h4>Informacion legal</h4>
+          <h4>Informacion</h4>
           <ul>
-            <li><a routerLink="/privacidad">Politica de Privacidad</a></li>
-            <li><a routerLink="/terminos">Terminos y Condiciones</a></li>
-            <li><a routerLink="/cookies">Politica de Cookies</a></li>
-            <li><a routerLink="/reembolsos">Reembolsos</a></li>
+            <li><a routerLink="/privacidad">Privacidad</a></li>
+            <li><a routerLink="/terminos">Terminos</a></li>
+            <li><a routerLink="/cookies">Cookies</a></li>
           </ul>
         </div>
         <div class="footer-contact">
           <h4>Contacto</h4>
-          <p><i class="fas fa-map-marker-alt"></i> Julio Argentino Roca, Q8315<br>Piedra del Aguila, Neuquen</p>
-          <p><i class="fas fa-phone"></i> 02942664320</p>
-          <p><i class="fas fa-envelope"></i> info&#64;jaquealrey.com</p>
+          <p>
+            <i class="fas fa-map-marker-alt"></i>
+            {{ datos.domicilio }}
+          </p>
+          <p>
+            <i class="fas fa-phone"></i>
+            <a [href]="datos.telefonoHref">{{ datos.telefono }}</a>
+          </p>
+          <p>
+            <i class="fab fa-whatsapp"></i>
+            <a [href]="datos.whatsappHref" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+          </p>
         </div>
       </div>
       <div class="footer-bottom container">
-        <p>&copy; 2026 Hotel Jaque al Rey. Todos los derechos reservados.</p>
-        <p class="footer-note">
-          No usamos cookies publicitarias ni de seguimiento.
-        </p>
+        <p>&copy; 2026 {{ datos.nombre }}.</p>
       </div>
     </footer>
   `,
@@ -77,29 +78,8 @@ import { RouterLink } from '@angular/router';
     .footer-brand p {
       font-size: 0.85rem;
       opacity: 0.7;
-      margin-bottom: 18px;
+      margin-bottom: 0;
       max-width: 300px;
-    }
-    .footer-social {
-      display: flex;
-      gap: 12px;
-    }
-    .footer-social a {
-      width: 36px;
-      height: 36px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: rgba(255, 255, 255, 0.5);
-      transition: var(--transition);
-      font-size: 0.85rem;
-    }
-    .footer-social a:hover {
-      border-color: var(--gold);
-      color: var(--gold);
-      background: rgba(184, 134, 11, 0.1);
     }
     .footer-links h4, .footer-contact h4 {
       color: #fff;
@@ -113,18 +93,20 @@ import { RouterLink } from '@angular/router';
       flex-direction: column;
       gap: 10px;
     }
-    .footer-links a {
+    .footer-links a,
+    .footer-contact a {
       color: rgba(255, 255, 255, 0.55);
       font-size: 0.85rem;
       transition: var(--transition);
     }
-    .footer-links a:hover { color: var(--gold-light); }
+    .footer-links a:hover,
+    .footer-contact a:hover { color: var(--gold-light); }
     .footer-contact p {
       font-size: 0.85rem;
       margin-bottom: 10px;
       display: flex;
       gap: 8px;
-      opacity: 0.65;
+      opacity: 0.8;
       line-height: 1.6;
     }
     .footer-contact i {
@@ -138,11 +120,13 @@ import { RouterLink } from '@angular/router';
       font-size: 0.78rem;
       opacity: 0.45;
     }
-    .footer-bottom p { margin: 0; }
+    .footer-bottom p { margin: 0 0 4px; }
 
     @media (max-width: 768px) {
       .footer-grid { grid-template-columns: 1fr; gap: 28px; }
     }
   `
 })
-export class FooterComponent {}
+export class FooterComponent {
+  readonly datos = DATOS_RESPONSABLE;
+}

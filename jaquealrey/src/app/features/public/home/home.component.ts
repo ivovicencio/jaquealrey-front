@@ -351,11 +351,31 @@ import { RESENIAS, Resenia } from './resenias.data';
       </section>
     }
 
-    <section class="cta-section">
-      <div class="container cta-inner">
-        <h2>Reserva ahora</h2>
-        <p>Encontra la habitacion perfecta para tu estadía en la Patagonia</p>
-        <a routerLink="/buscar-disponibilidad" class="btn btn-primary btn-lg">Buscar Disponibilidad</a>
+    <section class="location-section">
+      <div class="container location-layout">
+        <div class="location-copy">
+          <span class="section-tag">Cómo llegar</span>
+          <h2>Encontranos en<br />Piedra del Águila</h2>
+          <p>Hotel Jaque al Rey</p>
+          <span class="location-address">Julio Argentino Roca · Piedra del Águila, Neuquén</span>
+          <a
+            class="location-link"
+            href="https://www.google.com/maps/place/Hotel+%22Jaque+al+Rey%22/@-40.0492909,-70.0805509,17z/data=!4m20!1m10!3m9!1s0x960e37dc70d41135:0x1443102aadb8b488!2sHotel+%22Jaque+al+Rey%22!5m2!4m1!1i2!8m2!3d-40.049295!4d-70.077976!16s%2Fg%2F11r88r5_pg!3m8!1s0x960e37dc70d41135:0x1443102aadb8b488!5m2!4m1!1i2!8m2!3d-40.049295!4d-70.077976!16s%2Fg%2F11r88r5_pg?entry=ttu&g_ep=EgoyMDI2MDkzMC4wIKXMDSoASAFQAw%3D%3D"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Abrir en Google Maps <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          </a>
+        </div>
+        <div class="location-map">
+          <iframe
+            title="Ubicación exacta del Hotel Jaque al Rey en Google Maps"
+            src="https://maps.google.com/maps?q=-40.049295,-70.077976&z=17&output=embed"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen
+          ></iframe>
+        </div>
       </div>
     </section>
   `,
@@ -905,26 +925,104 @@ import { RESENIAS, Resenia } from './resenias.data';
       margin-left: 0.5rem;
     }
 
-    .cta-section {
-      padding: 80px 0;
-      background: var(--dark);
-      text-align: center;
+    .location-section {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(4rem, 8vw, 7rem) 0;
+      background:
+        radial-gradient(ellipse at 78% 50%, rgba(197, 168, 128, 0.09), transparent 48%),
+        var(--dark);
       color: #fff;
     }
-    .cta-inner h2 {
-      color: #fff;
-      margin-bottom: 0.5rem;
+    .location-layout {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.78fr) minmax(0, 1.22fr);
+      align-items: center;
+      gap: clamp(2rem, 6vw, 5rem);
     }
-    .cta-inner p {
-      color: rgba(255, 255, 255, 0.7);
-      margin-bottom: 1.5rem;
-      font-size: 0.95rem;
+    .location-copy .section-tag {
+      display: inline-block;
+      margin-bottom: 1.25rem;
+      color: #c5a880;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+    .location-copy h2 {
+      margin-bottom: 1rem;
+      color: #fff;
+      font-family: var(--font-heading);
+      font-size: clamp(2.3rem, 4.2vw, 3.6rem);
+      font-weight: 400;
+      line-height: 1.08;
+    }
+    .location-copy > p {
+      margin-bottom: 0.45rem;
+      color: #e6ddd1;
+      font-size: 1rem;
+      letter-spacing: 0.03em;
+    }
+    .location-address {
+      display: block;
+      color: rgba(255, 255, 255, 0.58);
+      font-size: 0.88rem;
+      line-height: 1.7;
+    }
+    .location-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.75rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 1px solid rgba(197, 168, 128, 0.6);
+      color: #d7bd98;
+      font-size: 0.76rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.25s ease, border-color 0.25s ease;
+    }
+    .location-link:hover {
+      border-color: #fff;
+      color: #fff;
+    }
+    .location-link i {
+      font-size: 0.7rem;
+    }
+    .location-map {
+      position: relative;
+      overflow: hidden;
+      min-height: 360px;
+      aspect-ratio: 1.55;
+      border: 1px solid rgba(215, 189, 152, 0.42);
+      background: #211b16;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+    }
+    .location-map::before {
+      position: absolute;
+      z-index: 1;
+      pointer-events: none;
+      content: '';
+      inset: 0;
+      box-shadow: inset 0 0 0 6px rgba(26, 20, 16, 0.08);
+    }
+    .location-map iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 360px;
+      border: 0;
     }
 
     @media (max-width: 1024px) {
       .rooms-carousel { height: 430px; }
     }
     @media (max-width: 768px) {
+      .location-layout { grid-template-columns: 1fr; gap: 2rem; }
+      .location-map { min-height: 300px; aspect-ratio: 1.2; }
+      .location-map iframe { min-height: 300px; }
       /* En vertical la foto 3:2 contenida deja una banda angosta. Va anclada
          arriba, sobre negro, y el texto queda debajo: mejor que estirarla y
          cortar la pieza. */

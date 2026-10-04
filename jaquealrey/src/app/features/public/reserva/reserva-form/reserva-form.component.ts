@@ -7,6 +7,7 @@ import { ReservaService } from '../../../../core/services/reserva.service';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { Habitacion } from '../../../../core/models/habitacion.model';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
+import { TERMINOS_VERSION } from '../../legal/legal-content';
 
 @Component({
   selector: 'app-reserva-form',
@@ -144,7 +145,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
               <p class="form-hint cancel-note">
                 Al reservar aceptas la
                 <a routerLink="/reembolsos" target="_blank" rel="noopener">politica de cancelacion y reembolso</a>:
-                podés cancelar sin costo hasta 24 horas antes de la entrada.
+                podés cancelar hasta 24 horas antes de la entrada.
               </p>
 
               @if (error()) {
@@ -413,6 +414,8 @@ export class ReservaFormComponent implements OnInit {
       fecha_salida: this.form.fecha_salida,
       huespedes: this.form.huespedes,
       notas: this.form.notas || undefined,
+      acepta_terminos: this.consentimiento,
+      terminos_version: TERMINOS_VERSION,
     }).subscribe({
       next: (res) => {
         if (res.status === '1' && res.data?.codigo) {

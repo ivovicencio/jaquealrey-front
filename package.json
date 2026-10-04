@@ -1,12 +1,10 @@
 {
-  "dependencies": {
-    "firebase-admin": "^14.5.0"
-  },
-  "devDependencies": {
-    "@capacitor/android": "^8.5.2",
-    "@capacitor/cli": "^8.5.2",
-    "@capacitor/core": "^8.5.2",
-    "electron": "^44.5.1",
-    "electron-builder": "^26.15.3"
+  "name": "jaquealrey-front",
+  "private": true,
+  "description": "Sitio y panel del Hotel Jaque al Rey",
+  "scripts": {
+    "dev": "npm start --prefix jaquealrey",
+    "start": "npm start --prefix jaquealrey",
+    "build": "npm run build --prefix jaquealrey"
   }
 }

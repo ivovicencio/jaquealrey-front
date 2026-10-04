@@ -20,7 +20,6 @@
             "outputPath": "dist/jaquealrey",
             "index": "src/index.html",
             "main": "src/main.ts",
-            "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
@@ -65,10 +64,11 @@
               "extractLicenses": false,
               "sourceMap": true
             }
-          }
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular/build:dev-server",
+          "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
               "buildTarget": "jaquealrey:build:production"
@@ -77,6 +77,7 @@
               "buildTarget": "jaquealrey:build:development"
             }
           },
+          "defaultConfiguration": "development",
           "options": {
             "proxyConfig": "proxy.conf.json"
           }

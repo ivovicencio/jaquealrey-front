@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { DOCUMENTOS, LegalDoc } from './legal-content';
+import { DATOS_RESPONSABLE, DOCUMENTOS, LegalDoc } from './legal-content';
 
 @Component({
   selector: 'app-legal',
@@ -28,6 +28,17 @@ import { DOCUMENTOS, LegalDoc } from './legal-content';
           </section>
         }
       </article>
+
+      <aside class="legal-contact">
+        <p><strong>{{ datos.nombre }}</strong></p>
+        <p>{{ datos.domicilio }}</p>
+        <p>
+          Telefono:
+          <a [href]="datos.telefonoHref">{{ datos.telefono }}</a>
+          ·
+          <a [href]="datos.whatsappHref" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        </p>
+      </aside>
 
       <nav class="legal-nav" aria-label="Otros documentos legales">
         @for (slug of otros; track slug) {
@@ -59,6 +70,16 @@ import { DOCUMENTOS, LegalDoc } from './legal-content';
       margin-bottom: 0.625rem;
     }
     section p { line-height: 1.75; margin-bottom: 0.75rem; color: var(--text); }
+    .legal-contact {
+      margin-top: 2rem;
+      padding: 1.25rem 1.35rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--gold) 6%, transparent);
+    }
+    .legal-contact p { margin: 0 0 0.4rem; line-height: 1.5; font-size: 0.92rem; }
+    .legal-contact a { color: var(--gold-dark); }
+    .legal-contact-note { color: var(--text-light); font-size: 0.85rem; margin-bottom: 0 !important; }
     .legal-nav {
       display: flex; flex-wrap: wrap; gap: 0.75rem;
       padding-top: 1.5rem; border-top: 1px solid var(--border);
@@ -75,6 +96,7 @@ export class LegalComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   readonly DOCUMENTOS = DOCUMENTOS;
+  readonly datos = DATOS_RESPONSABLE;
   readonly otros = ['privacidad', 'terminos', 'cookies', 'reembolsos'];
 
   slug = signal('privacidad');

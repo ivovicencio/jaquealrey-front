@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AdminService } from '../../../../core/services/admin.service';
 import { ReservaService } from '../../../../core/services/reserva.service';
@@ -62,17 +62,31 @@ import { ToastService } from '../../../../shared/services/toast.service';
             </div>
 
             <dl class="datos">
+              @if (cfg()?.banco_nombre && cfg()?.banco_nombre !== 'PENDIENTE-DE-CARGAR') {
+                <div>
+                  <dt>Banco</dt>
+                  <dd>{{ cfg()?.banco_nombre }}</dd>
+                </div>
+              }
+              @if (cfg()?.titular_cuenta && cfg()?.titular_cuenta !== 'PENDIENTE-DE-CARGAR') {
+                <div>
+                  <dt>Titular de la cuenta</dt>
+                  <dd>{{ cfg()?.titular_cuenta }}</dd>
+                </div>
+              }
               <div>
-                <dt>Banco</dt>
-                <dd>{{ cfg()?.banco_nombre }}</dd>
-              </div>
-              <div>
-                <dt>Titular de la cuenta</dt>
-                <dd>{{ cfg()?.titular_cuenta }}</dd>
-              </div>
-              <div>
-                <dt>Total de tu reserva</dt>
+                <dt>Total de la reserva</dt>
                 <dd class="total" data-testid="total">{{ total() | currencyAr }}</dd>
+              </div>
+              <div>
+                <dt>Anticipo requerido ({{ cfg()?.anticipo_porcentaje }}%)</dt>
+                <dd class="total" data-testid="anticipo">
+                  @if (montoAnticipo() !== null) {
+                    {{ montoAnticipo() | currencyAr }}
+                  } @else {
+                    No disponible
+                  }
+                </dd>
               </div>
             </dl>
 
@@ -253,6 +267,14 @@ export class PagarReservaComponent implements OnInit {
   codigo = signal('');
   cfg = signal<ConfigCobro | null>(null);
   total = signal(0);
+  montoAnticipo = computed(() => {
+    const porcentaje = Number(this.cfg()?.anticipo_porcentaje);
+    const total = this.total();
+    if (!Number.isFinite(porcentaje) || porcentaje < 0 || porcentaje > 100 || total <= 0) {
+      return null;
+    }
+    return Math.round(total * porcentaje) / 100;
+  });
 
   cargando = signal(true);
   error = signal('');

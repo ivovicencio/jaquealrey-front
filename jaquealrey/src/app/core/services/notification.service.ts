@@ -40,8 +40,9 @@ export class NotificationService {
   private asegurarSocket(): Socket {
     if (this.socket) return this.socket;
 
-    const socket = io(environment.apiUrl.replace('/api', ''), {
+    const socket = io(environment.apiUrl.replace(/\/api\/?$/, '') || window.location.origin, {
       transports: ['websocket', 'polling'],
+      auth: {},
     });
 
     socket.on('nueva-reserva', (data: Reserva) => {

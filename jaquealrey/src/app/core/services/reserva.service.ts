@@ -15,6 +15,8 @@ interface CreateReservaPayload {
   fecha_salida: string;
   huespedes: number;
   notas?: string;
+  acepta_terminos: boolean;
+  terminos_version: string;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -80,14 +80,13 @@ export class AuthService {
    */
   logout(): void {
     this.notificaciones.disconnect();
-    this.clearSession();
-
+    // El interceptor lee el token al suscribirse. Si se borra antes, el POST
+    // sale sin credenciales y el servidor no revoca la sesion.
     this.http.post(`${this.apiUrl}/auth/logout`, {}).subscribe({
       next: () => undefined,
-      // Si el POST falla, la sesion local ya esta limpia. Un logout que no
-      // borra el token porque la red cayo seria peor que un token sin revocar.
       error: () => undefined,
     });
+    this.clearSession();
   }
 
   private clearSession(): void {
