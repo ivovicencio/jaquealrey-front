@@ -15,10 +15,12 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular/build:application",
+          "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "browser": "src/main.ts",
-            "serviceWorker": "ngsw-config.json",
+            "outputPath": "dist/jaquealrey",
+            "index": "src/index.html",
+            "main": "src/main.ts",
+            "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
@@ -33,7 +35,8 @@
             ],
             "styles": [
               "src/styles.css"
-            ]
+            ],
+            "scripts": []
           },
           "configurations": {
             "production": {
@@ -62,8 +65,7 @@
               "extractLicenses": false,
               "sourceMap": true
             }
-          },
-          "defaultConfiguration": "production"
+          }
         },
         "serve": {
           "builder": "@angular/build:dev-server",
@@ -75,13 +77,16 @@
               "buildTarget": "jaquealrey:build:development"
             }
           },
-          "defaultConfiguration": "development",
           "options": {
             "proxyConfig": "proxy.conf.json"
           }
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "tsconfig.spec.json",
+            "polyfills": ["zone.js", "zone.js/testing"]
+          }
         }
       }
     }

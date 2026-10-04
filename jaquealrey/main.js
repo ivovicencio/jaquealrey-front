@@ -5,6 +5,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    title: 'Hotel Jaque al Rey',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -12,11 +13,12 @@ function createWindow() {
     icon: path.join(__dirname, 'assets/icon.png')
   });
 
-  // Cargamos la URL de la app desplegada (ej: Vercel o Railway)
-  // En desarrollo puede ser http://localhost:4200
-  win.loadURL('https://jaquealrey.vercel.app');
+  // Cargamos la app desde localhost ya que el usuario confirmó que está corriendo ahí
+  win.loadURL('http://localhost:4200');
 
-  // Manejo de notificaciones nativas de Windows
+  // Eliminamos el menú superior por defecto para que parezca una App nativa
+  win.setMenuBarVisibility(false);
+
   win.on('notification', (event, notification) => {
     new Notification({
       title: notification.title,

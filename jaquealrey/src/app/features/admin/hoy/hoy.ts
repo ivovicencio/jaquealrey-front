@@ -56,7 +56,7 @@ import { AuthService } from '../../../core/services/auth.service';
 
           Va antes de todo lo demás y bloquea con un fondo, porque es la única
           acción de recepción que borra una reserva sin que el huésped la haya
-          cancelado. Un `confirm()` del navegador sewbraba en Some Mobile Safari
+          cancelado. Un confirm() del navegador se quebraba en algunos navegadores móviles
           y no se ve; este se ve siempre y obliga a leer el nombre.
 
           Se dice explícitamente que se avisa al huésped: la decisión que se está
@@ -942,7 +942,7 @@ export class AdminHoyComponent implements OnInit {
     });
   }
 
-  ponerEstado(h: HabitacionEstado, estado: EstadoOperativo) {
+  ponerEstado(h: HabitacionEstado, estado: Exclude<EstadoOperativo, 'ocupada'>) {
     this.busyId.set(h.id);
     this.adminService.updateEstadoHabitacion(h.id, estado).subscribe({
       next: (res) => {
@@ -990,19 +990,23 @@ export class AdminHoyComponent implements OnInit {
    * casilla de "entra igual debiendo" activada. Es el mismo EPSILON de
    * pago.service.js: si cambia uno, cambia el otro.
    */
-  debeDinero(r: ReservaHoy): boolean {
+  debeDinero(r: ReservaHoy | null | undefined): boolean {
+    if (!r) return false;
     return Number(r.saldo || 0) > 0.05;
   }
 
-  nombreHuesped(r: ReservaHoy): string {
+  nombreHuesped(r: ReservaHoy | null | undefined): string {
+    if (!r) return '';
     return `${r.cliente_nombre || ''} ${r.cliente_apellido || ''}`.trim();
   }
 
-  hayAvisoHabitacion(r: ReservaHoy): boolean {
+  hayAvisoHabitacion(r: ReservaHoy | null | undefined): boolean {
+    if (!r) return false;
     return r.estado_operativo === 'mantenimiento' || r.estado_operativo === 'limpieza';
   }
 
-  avisoHabitacion(r: ReservaHoy): string {
+  avisoHabitacion(r: ReservaHoy | null | undefined): string {
+    if (!r) return '';
     if (r.estado_operativo === 'mantenimiento') return 'La habitación está en mantenimiento';
     if (r.estado_operativo === 'limpieza') return 'Falta la limpieza: marcala antes de dar la llave';
     return '';
