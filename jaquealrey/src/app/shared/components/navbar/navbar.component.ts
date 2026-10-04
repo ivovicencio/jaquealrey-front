@@ -3,7 +3,6 @@ import { RouterLink, Router, NavigationEnd } from '@angular/router';
 import { FlowingMenuComponent } from '../flowing-menu/flowing-menu.component';
 import { FlowingMenuItem } from '../flowing-menu/flowing-menu.model';
 import { AuthService } from '../../../core/services/auth.service';
-import { NotificationService } from '../../../core/services/notification.service';
 import { filter } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 
@@ -180,7 +179,6 @@ import { Subscription } from 'rxjs';
 export class NavbarComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private auth = inject(AuthService);
-  private notifications = inject(NotificationService);
 
   scrolled = signal(false);
   menuOpen = signal(false);
@@ -253,20 +251,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Cierra sesion contra el servidor y recien ahi borra el token local.
+   * Cierra sesion y vuelve al login.
    *
-   * El orden importa: si se limpiara el localStorage primero y el POST fallara,
-   * el token seguiria valido en el servidor y el admin tendria que recargar
-   * para "volver a entrar". `AuthService.logout()` limpia igual en el `tap`
-   * porque el `catchError` lo convierte en exito, asi que la sesion local nunca
-   * queda viva.
+   * `AuthService.logout()` ya borra el token y tira el socket por su cuenta: es
+   * imperativo justamente para que ningun llamador pueda olvidarse de hacerlo. Aqi
+   * solo queda la navegacion, que es lo unico que depende de este componente.
    */
   private logout(): void {
-    this.auth.logout().subscribe(() => {
-      this.notifications.disconnect();
-      this.sesionTick.update((v) => v + 1);
-      this.router.navigateByUrl('/login');
-    });
+    this.auth.logout();
+    this.sesionTick.update((v) => v + 1);
+    this.router.navigateByUrl('/login');
   }
 
   @HostListener('document:keydown.escape')

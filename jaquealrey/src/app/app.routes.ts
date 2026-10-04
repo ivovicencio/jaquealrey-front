@@ -57,7 +57,6 @@ export const routes: Routes = [
       ),
   },
 
-  // Documentos legales exigidos por la Ley 25.326 y la Ley 24.241.
   ...['privacidad', 'terminos', 'cookies', 'reembolsos'].map((slug) => ({
     path: slug,
     loadComponent: () =>
@@ -65,18 +64,29 @@ export const routes: Routes = [
     data: { slug },
   })),
 
-  // El huesped no tiene cuenta. El login es solo del personal del hotel.
   {
     path: 'login',
     loadComponent: () =>
       import('./features/auth/login/login.component').then((m) => m.LoginComponent),
   },
 
-  // Admin
+  // ===== ADMIN =====
   {
     path: 'admin',
     loadComponent: () =>
       import('./features/admin/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'admin/hoy',
+    loadComponent: () =>
+      import('./features/admin/hoy/hoy').then((m) => m.AdminHoyComponent),
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'admin/walk-in',
+    loadComponent: () =>
+      import('./features/admin/walk-in/walk-in').then((m) => m.AdminWalkInComponent),
     canActivate: [adminGuard],
   },
   {
@@ -138,6 +148,6 @@ export const routes: Routes = [
     canActivate: [adminGuard],
   },
 
-  // Fallback
+  // Fallback: si la ruta no existe, va al home
   { path: '**', redirectTo: '' },
 ];

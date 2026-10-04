@@ -141,6 +141,18 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                 <textarea class="form-textarea" [(ngModel)]="notasCambio" rows="2"
                   placeholder="Motivo o comentario del cambio..."></textarea>
               </div>
+              @if (nuevoEstado === 'Confirmada' && anticipoFaltante() > 0) {
+                <div class="form-group">
+                  <label class="check-label">
+                    <input type="checkbox" [(ngModel)]="forzarSinPago" />
+                    Confirmar sin el anticipo (cortesía o pago en efectivo pendiente)
+                  </label>
+                  <p class="hint">
+                    Falta {{ anticipoFaltante() | currencyAr }}. Queda anotado en la bitácora
+                    como “forzado sin pago”.
+                  </p>
+                </div>
+              }
               <button class="btn btn-primary" (click)="updateEstado()" [disabled]="updating()">
                 @if (updating()) {
                   <span class="spinner-sm"></span> Actualizando...
@@ -325,6 +337,13 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
     }
 
     .saldo-pendiente { color: #a1443c; font-weight: 700; }
+
+    .check-label {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    }
+    .check-label input { width: auto; margin: 0; }
+    .hint { margin: 0.35rem 0 0; font-size: 0.8rem; color: var(--text-light); }
     .sin-datos { color: var(--text-light); font-size: 0.875rem; margin: 0; }
     .table-responsive { overflow-x: auto; }
 
@@ -383,12 +402,40 @@ export class AdminReservaDetailComponent implements OnInit {
 
   nuevoEstado = '';
   notasCambio = '';
+  forzarSinPago = false;
+  anticipoPct = signal(0);
 
   estadoOptions = signal<string[]>([]);
+
+  /**
+   * Cuánta plata falta para llegar al anticipo que el hotel exige al confirmar.
+   *
+   * El backend es el que manda: esto solo dibuja el aviso para que el
+   * recepcionista active el override a ciegas. Si el número no coincide, el
+   * 409 del servidor sigue siendo la respuesta correcta.
+   */
+  anticipoFaltante(): number {
+    const total = this.reserva()?.precio_total ?? 0;
+    const pagado = this.pagos()?.total_pagado ?? 0;
+    const requerido = (total * this.anticipoPct()) / 100;
+    return Math.max(0, Math.round((requerido - pagado) * 100) / 100);
+  }
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (id) this.loadReserva(id);
+    this.loadAnticipo();
+  }
+
+  private loadAnticipo() {
+    this.adminService.getConfigCobro().subscribe({
+      next: (res) => {
+        if (res.status === '1') {
+          this.anticipoPct.set(Number(res.data?.anticipo_porcentaje) || 0);
+        }
+      },
+      error: () => this.anticipoPct.set(0),
+    });
   }
 
   loadReserva(id: number) {
@@ -457,7 +504,7 @@ export class AdminReservaDetailComponent implements OnInit {
           this.guardandoPago.set(false);
         },
         error: (e) => {
-          this.toast.error(e?.error?.message ?? 'Error al registrar el pago');
+          this.toast.error(e?.error?.msg ?? 'Error al registrar el pago');
           this.guardandoPago.set(false);
         },
       });
@@ -484,9 +531,13 @@ export class AdminReservaDetailComponent implements OnInit {
   }
 
   updateEstadoOptions(estado: string) {
+    // Espejo de la maquina de estados del backend (services/reserva.service.js).
+    // Si se desincroniza, el select ofrece transiciones que el backend rechaza
+    // con 409 y el panel muestra un error sin explicar por que.
     const transitions: Record<string, string[]> = {
       Pendiente: ['Confirmada', 'Cancelada'],
-      Confirmada: ['Completada', 'Cancelada'],
+      Confirmada: ['En_Casa', 'Completada', 'Cancelada'],
+      En_Casa: ['Completada'],
       Completada: [],
       Cancelada: [],
     };
@@ -497,29 +548,44 @@ export class AdminReservaDetailComponent implements OnInit {
     const r = this.reserva();
     if (!r || !this.nuevoEstado) return;
 
+    // El override solo viaja si el checkbox está marcado y solo tiene sentido
+    // al confirmar: mandarlo siempre sería mandar el flag de "~pago excused"
+    // en cada cambio de estado.
+    const forzar =
+      this.forzarSinPago && this.nuevoEstado === 'Confirmada' ? true : undefined;
+
     this.updating.set(true);
-    this.adminService.updateReservaEstado(r.id, this.nuevoEstado, this.notasCambio || undefined).subscribe({
-      next: (res) => {
-        if (res.status === '1') {
-          this.toast.success('Estado actualizado correctamente');
-          this.reserva.set(res.data);
-          this.updateEstadoOptions(res.data.estado);
-          this.notasCambio = '';
-        } else {
-          this.toast.error(res.msg || 'Error al actualizar');
-        }
-        this.updating.set(false);
-      },
-      error: () => {
-        this.toast.error('Error al actualizar el estado');
-        this.updating.set(false);
-      },
-    });
+    this.adminService
+      .updateReservaEstado(r.id, this.nuevoEstado, this.notasCambio || undefined, forzar)
+      .subscribe({
+        next: (res) => {
+          if (res.status === '1') {
+            this.toast.success('Estado actualizado correctamente');
+            this.reserva.set(res.data);
+            this.updateEstadoOptions(res.data.estado);
+            this.notasCambio = '';
+            this.forzarSinPago = false;
+            // El saldo no cambia, pero el detalle devuelto por el PUT no trae
+            // los joins; recargar la reserva entera lo deja consistente.
+            this.loadPagos(r.id);
+          } else {
+            this.toast.error(res.msg || 'Error al actualizar');
+          }
+          this.updating.set(false);
+        },
+        error: (err) => {
+          // El backend explica el 409 ("falta el anticipo", transicion
+          // invalida). Taparlo con un error generico deja al admin sin salida.
+          this.toast.error(err?.error?.msg || 'Error al actualizar el estado');
+          this.updating.set(false);
+        },
+      });
   }
 
   badgeClass(estado: string): string {
     switch (estado) {
       case 'Confirmada': return 'badge-success';
+      case 'En_Casa': return 'badge-success';
       case 'Pendiente': return 'badge-warning';
       case 'Cancelada': return 'badge-danger';
       case 'Completada': return 'badge-info';

@@ -444,7 +444,7 @@ export class AdminPagosComponent implements OnInit {
           map((r) => r.status === '1'),
           catchError((e) => {
             this.guardandoConfig.set(false);
-            this.toast.error(e?.error?.message ?? `No se pudo guardar ${clave}`);
+            this.toast.error(e?.error?.msg ?? `No se pudo guardar ${clave}`);
             return of(false);
           })
         )
@@ -474,6 +474,7 @@ export class AdminPagosComponent implements OnInit {
     this.adminService.getPagos({
       estado: this.filtroEstado || undefined,
       limite: 50,
+      pagina: 1,
     }).subscribe({
       next: (res) => {
         if (res.status === '1') this.pagos.set(res.data.pagos);
@@ -562,7 +563,7 @@ export class AdminPagosComponent implements OnInit {
           this.guardando.set(false);
         },
         error: (e) => {
-          this.toast.error(e?.error?.message ?? 'Error al registrar el pago');
+          this.toast.error(e?.error?.msg ?? 'Error al registrar el pago');
           this.guardando.set(false);
         },
       });
@@ -575,7 +576,7 @@ export class AdminPagosComponent implements OnInit {
         this.cargarIngresos();
         this.cargarPagos();
       },
-      error: (e) => this.toast.error(e?.error?.message ?? 'Error al confirmar'),
+      error: (e) => this.toast.error(e?.error?.msg ?? 'Error al confirmar'),
     });
   }
 
@@ -587,7 +588,7 @@ export class AdminPagosComponent implements OnInit {
         this.cargarIngresos();
         this.cargarPagos();
       },
-      error: (e) => this.toast.error(e?.error?.message ?? 'Error al anular'),
+      error: (e) => this.toast.error(e?.error?.msg ?? 'Error al anular'),
     });
   }
 

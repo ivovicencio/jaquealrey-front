@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { DashboardData } from '../models/dashboard.model';
-import { Reserva, ReservaAdminList } from '../models/reserva.model';
+import { Reserva, ReservaAdminList, HoyData, HabitacionEstado, Bloqueo } from '../models/reserva.model';
 import { Habitacion } from '../models/habitacion.model';
 import { HistorialPaginado } from '../models/historial.model';
 import {
@@ -54,10 +54,15 @@ export class AdminService {
     });
   }
 
-  updateReservaEstado(id: number, estado: string, notas?: string): Observable<ApiResponse<Reserva>> {
+  updateReservaEstado(
+    id: number,
+    estado: string,
+    notas?: string,
+    forzar_sin_pago?: boolean
+  ): Observable<ApiResponse<Reserva>> {
     return this.http.put<ApiResponse<Reserva>>(
       `${this.apiUrl}/admin/reservas/${id}/estado`,
-      { estado, notas },
+      { estado, notas, forzar_sin_pago },
       { headers: this.adminHeaders() }
     );
   }
@@ -189,6 +194,149 @@ export class AdminService {
   getOcupacion(desde: string, hasta: string): Observable<ApiResponse<OcupacionData>> {
     const params = new HttpParams().set('desde', desde).set('hasta', hasta);
     return this.http.get<ApiResponse<OcupacionData>>(`${this.apiUrl}/admin/ocupacion`, {
+      headers: this.adminHeaders(),
+      params,
+    });
+  }
+
+    // ------------------------------------------------------------------
+  // Recepción: Hoy, walk-in, check-in / check-out
+  // ------------------------------------------------------------------
+
+  getHoy(): Observable<ApiResponse<HoyData>> {
+    return this.http.get<ApiResponse<HoyData>>(`${this.apiUrl}/admin/hoy`, {
+      headers: this.adminHeaders(),
+    });
+  }
+
+  createWalkIn(data: {
+    nombre: string;
+    apellido?: string;
+    telefono: string;
+    email: string;
+    habitacion_id: number;
+    fecha_entrada: string;
+    fecha_salida: string;
+    huespedes: number;
+    notas?: string;
+  }): Observable<ApiResponse<Reserva>> {
+    return this.http.post<ApiResponse<Reserva>>(`${this.apiUrl}/admin/reservas`, data, {
+      headers: this.adminHeaders(),
+    });
+  }
+
+  /**
+   * Check-in.
+   *
+   * `documento` y `nacionalidad` son obligatorios en la API. Es a propósito: en
+   * recepción el DNI está a la vista, así que no cuesta nada, y la web NO los
+   * pide (PASOS.md 24.1). El tipo los marca como tales para que el formulario no
+   * los pueda mandar por olvido y se lleve un 400 del servidor.
+   */
+  checkIn(
+    id: number,
+    data: {
+      documento: string;
+      nacionalidad: string;
+      entregado_a?: string;
+      notas?: string;
+      forzar_sin_pago?: boolean;
+    }
+  ): Observable<ApiResponse<Reserva>> {
+    return this.http.post<ApiResponse<Reserva>>(
+      `${this.apiUrl}/admin/reservas/${id}/check-in`,
+      data,
+      { headers: this.adminHeaders() }
+    );
+  }
+
+  checkOut(
+    id: number,
+    data?: { notas?: string; forzar_sin_pago?: boolean }
+  ): Observable<ApiResponse<Reserva>> {
+    return this.http.post<ApiResponse<Reserva>>(
+      `${this.apiUrl}/admin/reservas/${id}/check-out`,
+      data || {},
+      { headers: this.adminHeaders() }
+    );
+  }
+
+  /**
+   * No presentación. Cancela la reserva, avisa al huésped y, si estaba En_Casa,
+   * manda la habitación a 'limpieza'.
+   *
+   * El botón tiene que pedir confirmación: es la única acción de recepción que
+   * destruye una reserva sin que el huésped la cancele, y desde el botón de la
+   * tabla el error de un click se paga con plata.
+   */
+  noShow(id: number): Observable<ApiResponse<Reserva>> {
+    return this.http.post<ApiResponse<Reserva>>(
+      `${this.apiUrl}/admin/reservas/${id}/no-se-presento`,
+      {},
+      { headers: this.adminHeaders() }
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Habitaciones: estado operativo y bloqueos
+  // ------------------------------------------------------------------
+
+  getEstadoHabitaciones(): Observable<ApiResponse<HabitacionEstado[]>> {
+    return this.http.get<ApiResponse<HabitacionEstado[]>>(`${this.apiUrl}/admin/habitaciones/estado`, {
+      headers: this.adminHeaders(),
+    });
+  }
+
+  updateEstadoHabitacion(
+    id: number,
+    estado_operativo: 'libre' | 'limpieza' | 'mantenimiento'
+  ): Observable<ApiResponse<HabitacionEstado>> {
+    return this.http.put<ApiResponse<HabitacionEstado>>(
+      `${this.apiUrl}/admin/habitaciones/${id}/estado`,
+      { estado_operativo },
+      { headers: this.adminHeaders() }
+    );
+  }
+
+  /** "Limpieza terminada": de 'limpieza' a 'libre'. */
+  reactivarHabitacion(id: number): Observable<ApiResponse<HabitacionEstado>> {
+    return this.http.post<ApiResponse<HabitacionEstado>>(
+      `${this.apiUrl}/admin/habitaciones/${id}/reactivar`,
+      {},
+      { headers: this.adminHeaders() }
+    );
+  }
+
+  getBloqueos(habitacionId?: number, soloVigentes = false): Observable<ApiResponse<Bloqueo[]>> {
+    let params = new HttpParams().set('solo_vigentes', soloVigentes ? 'true' : 'false');
+    if (habitacionId !== undefined) params = params.set('habitacion_id', String(habitacionId));
+
+    return this.http.get<ApiResponse<Bloqueo[]>>(`${this.apiUrl}/admin/bloqueos`, {
+      headers: this.adminHeaders(),
+      params,
+    });
+  }
+
+  crearBloqueo(data: {
+    habitacion_id: number;
+    desde: string;
+    hasta: string;
+    motivo: string;
+  }): Observable<ApiResponse<Bloqueo>> {
+    return this.http.post<ApiResponse<Bloqueo>>(`${this.apiUrl}/admin/bloqueos`, data, {
+      headers: this.adminHeaders(),
+    });
+  }
+
+  levantarBloqueo(id: number): Observable<ApiResponse<Bloqueo>> {
+    return this.http.delete<ApiResponse<Bloqueo>>(`${this.apiUrl}/admin/bloqueos/${id}`, {
+      headers: this.adminHeaders(),
+    });
+  }
+
+  getPorVerificar(horas = 0): Observable<ApiResponse<Reserva[]>> {
+    const params = new HttpParams().set('horas', String(horas));
+    return this.http.get<ApiResponse<Reserva[]>>(`${this.apiUrl}/admin/reservas/por-verificar`, {
       headers: this.adminHeaders(),
       params,
     });
