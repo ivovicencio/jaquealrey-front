@@ -601,7 +601,7 @@ import { RESENIAS, Resenia } from './resenias.data';
       50% { transform: translateY(5px); }
     }
 
-    .features { padding: 80px 0 60px; background: var(--cream); }
+    .features { padding: clamp(4rem, 7vw, 6rem) 0 clamp(3rem, 5vw, 4.5rem); background: var(--cream); }
     .section-header {
       text-align: center;
       max-width: 560px;
@@ -637,29 +637,23 @@ import { RESENIAS, Resenia } from './resenias.data';
     }
     .services-facts {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 16px;
-      margin-top: 2.5rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: clamp(1.5rem, 4vw, 3.5rem);
+      margin-top: 1.75rem;
+      border-top: 1px solid var(--border);
     }
     .fact-chip {
       display: flex;
       align-items: flex-start;
-      gap: 14px;
-      padding: 18px 18px;
-      background: var(--white);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      border-left: 3px solid var(--gold);
-      transition: var(--transition);
-    }
-    .fact-chip:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-lg);
+      gap: 1rem;
+      padding: 1.25rem 0;
+      border-bottom: 1px solid var(--border);
     }
     .fact-chip i {
-      font-size: 1.15rem;
-      color: var(--gold);
-      margin-top: 2px;
+      flex: 0 0 1.25rem;
+      margin-top: 0.2rem;
+      font-size: 1rem;
+      color: var(--gold-dark);
     }
     .fact-chip > div {
       display: flex;
@@ -670,7 +664,7 @@ import { RESENIAS, Resenia } from './resenias.data';
       font-size: 0.875rem;
       font-weight: 700;
       font-family: var(--font-family);
-      color: var(--text-dark);
+      color: var(--dark);
     }
     .fact-text {
       font-size: 0.78rem;
@@ -680,7 +674,15 @@ import { RESENIAS, Resenia } from './resenias.data';
 
     /* La seccion va a sangre arriba porque el ScrollExpand necesita el alto
        completo, y el resto del contenido se mete en un .container propio. */
-    .rooms { padding: 0 0 20px; }
+    .rooms { padding: 0 0 clamp(3rem, 6vw, 5rem); }
+    .rooms > .container { padding-top: clamp(2rem, 5vw, 4rem); }
+    .rooms .section-header { text-align: left; margin: 0 0 1.25rem; }
+    .rooms .section-header h3 {
+      margin: 0;
+      font-family: var(--font-heading);
+      font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+      font-weight: 500;
+    }
     /* El texto que aparece cuando el marco ya esta abierto. */
     .rooms-lead {
       max-width: 44ch;
@@ -705,10 +707,10 @@ import { RESENIAS, Resenia } from './resenias.data';
       justify-content: space-between;
       gap: 1.5rem;
       flex-wrap: wrap;
-      padding: 1.25rem 1.5rem;
-      border: 1px solid rgba(0, 0, 0, 0.07);
-      border-radius: 14px;
-      background: #fff;
+      padding: 1.25rem 0;
+      border-top: 1px solid var(--border-strong);
+      border-bottom: 1px solid var(--border);
+      background: transparent;
     }
     .rooms-foco-datos h4 {
       font-size: 1.05rem;
@@ -744,7 +746,7 @@ import { RESENIAS, Resenia } from './resenias.data';
 
     .hotel-info {
       position: relative;
-      padding: 80px 0;
+      padding: clamp(4rem, 7vw, 6rem) 0;
       overflow: hidden;
       color: #fff;
     }    .hotel-info-bg {
@@ -828,7 +830,7 @@ import { RESENIAS, Resenia } from './resenias.data';
 
     /* ---------------------------------------------------------------- reviews */
     .reviews {
-      padding: 80px 0 70px;
+      padding: clamp(4rem, 7vw, 6rem) 0;
       background: var(--cream);
     }
     .reviews .section-header { margin-bottom: 8px; }
@@ -841,7 +843,7 @@ import { RESENIAS, Resenia } from './resenias.data';
       color: var(--text-light);
     }
     .reviews-score i { color: var(--gold); }
-    .reviews-score strong { color: var(--text-dark); }
+    .reviews-score strong { color: var(--dark); }
     .reviews-layout {
       display: grid;
       grid-template-columns: 0.9fr 1.1fr;
@@ -858,10 +860,12 @@ import { RESENIAS, Resenia } from './resenias.data';
     .review-card {
       margin: 0;
       padding: 2.25rem 2rem;
-      background: var(--white);
-      border-radius: 18px;
-      border-left: 3px solid var(--gold);
-      box-shadow: var(--shadow-lg);
+      background: transparent;
+      border-radius: 0;
+      border-left: 1px solid var(--gold);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      box-shadow: none;
       min-height: 220px;
       display: flex;
       flex-direction: column;
@@ -880,7 +884,7 @@ import { RESENIAS, Resenia } from './resenias.data';
       font-size: 1.05rem;
       line-height: 1.7;
       font-weight: 300;
-      color: var(--text-dark);
+      color: var(--dark);
     }
     .review-card figcaption {
       display: flex;
@@ -891,7 +895,7 @@ import { RESENIAS, Resenia } from './resenias.data';
     .review-author {
       font-weight: 700;
       font-size: 0.9rem;
-      color: var(--text-dark);
+      color: var(--dark);
     }
     .review-via {
       font-size: 0.75rem;
@@ -908,9 +912,9 @@ import { RESENIAS, Resenia } from './resenias.data';
       width: 38px;
       height: 38px;
       border-radius: 50%;
-      border: 1px solid rgba(26, 20, 16, 0.15);
-      background: var(--white);
-      color: var(--text-dark);
+      border: 1px solid var(--border-strong);
+      background: transparent;
+      color: var(--dark);
       cursor: pointer;
       transition: var(--transition);
     }
@@ -1020,6 +1024,9 @@ import { RESENIAS, Resenia } from './resenias.data';
       .rooms-carousel { height: 430px; }
     }
     @media (max-width: 768px) {
+      .features { padding-top: 3.5rem; }
+      .services-facts { grid-template-columns: 1fr; }
+      .fact-chip { padding: 1rem 0; }
       .location-layout { grid-template-columns: 1fr; gap: 2rem; }
       .location-map { min-height: 300px; aspect-ratio: 1.2; }
       .location-map iframe { min-height: 300px; }

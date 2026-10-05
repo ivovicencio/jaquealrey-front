@@ -54,7 +54,9 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 
       @if (searched()) {
         <div class="results-section">
-          @if (resultados().length === 0) {
+          @if (loading()) {
+            <p class="loading-state" role="status">Buscando habitaciones disponibles...</p>
+          } @else if (resultados().length === 0) {
             <div class="empty card">
               <div class="card-body text-center">
                 <p class="empty-icon"><i class="fas fa-face-frown"></i></p>
@@ -96,31 +98,48 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
     </div>
   `,
   styles: `
-    .page { padding: 2rem 0 4rem; }
+    .page { padding: clamp(3rem, 6vw, 5rem) 0; }
     .page-header {
-      text-align: center;
-      margin-bottom: 2rem;
+      max-width: 760px;
+      margin: 0 0 2rem;
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid var(--border);
     }
-    .page-header h1 { margin-bottom: 0.5rem; }
+    .page-header h1 {
+      margin-bottom: 0.4rem;
+      font-size: clamp(2.4rem, 5vw, 3.5rem);
+      font-weight: 500;
+      line-height: 1;
+    }
     .section-tag {
       display: inline-block;
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 2.5px;
-      color: var(--gold);
+      color: var(--gold-dark);
       font-weight: 500;
       margin-bottom: 8px;
     }
     .page-subtitle {
       color: var(--text-light);
-      font-size: 0.95rem;
+      max-width: 52ch;
+      font-size: 1rem;
       margin-bottom: 0;
     }
-    .search-card { margin-bottom: 2rem; }
+    .search-card {
+      margin-bottom: 2.75rem;
+      border: 0;
+      border-top: 1px solid var(--border-strong);
+      border-bottom: 1px solid var(--border);
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .search-card .card-body { padding: 1.5rem 0; }
     .search-form {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr auto;
-      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+      gap: 1.25rem;
       align-items: end;
     }
     .search-btn-wrap { display: flex; flex-direction: column; }
@@ -130,22 +149,38 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       color: var(--text-light);
       margin-bottom: 1rem;
     }
+    .loading-state {
+      padding: 2.5rem 1rem;
+      border-block: 1px solid var(--border);
+      color: var(--text-light);
+      text-align: center;
+    }
     .rooms-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: clamp(1rem, 3vw, 2.25rem);
+      row-gap: 2rem;
     }
-    .room-card { overflow: hidden; }
+    .room-card {
+      overflow: hidden;
+      border: 0;
+      border-bottom: 1px solid var(--border-strong);
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
     .room-image {
-      height: 160px;
+      height: clamp(170px, 20vw, 230px);
       display: flex;
       align-items: center;
       justify-content: center;
     }
+    .room-card .card-body { padding: 1rem 0 1.25rem; }
     .room-number {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: rgba(255, 255, 255, 0.7);
+      font-family: var(--font-heading);
+      font-size: 4rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.84);
     }
     .room-header {
       display: flex;
@@ -175,14 +210,24 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       font-size: 0.8125rem;
       color: var(--text-light);
     }
-    .empty { margin-top: 2rem; padding: 2rem; }
+    .empty {
+      margin-top: 2rem;
+      padding: 1rem;
+      border: 0;
+      border-radius: 0;
+      background: var(--warm);
+      box-shadow: none;
+    }
+    .empty .card-body { padding: 1.5rem; }
 
     @media (max-width: 1024px) {
       .rooms-grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 768px) {
-      .search-form { grid-template-columns: 1fr; }
+      .page { padding: 2.75rem 0 3.5rem; }
+      .search-form { grid-template-columns: 1fr; gap: 0.5rem; }
       .rooms-grid { grid-template-columns: 1fr; }
+      .room-image { height: 220px; }
     }
   `
 })

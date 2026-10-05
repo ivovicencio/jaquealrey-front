@@ -78,6 +78,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       @if (buscado() && !reserva()) {
         <div class="card card-empty">
           <div class="card-body">
+            <p class="empty-icon"><i class="fas fa-magnifying-glass"></i></p>
             <p>No encontramos ninguna reserva con ese codigo y email.</p>
             <p class="hint">Revisa que el codigo sea correcto. Si no te sirve, llamanos al 02942664320.</p>
           </div>
@@ -178,18 +179,45 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
     </div>
   `,
   styles: `
-    .page { padding: 3rem 0 4rem; max-width: 720px; }
-    .page-title { font-size: 1.75rem; font-weight: 600; font-family: var(--font-heading); margin-bottom: 0.5rem; }
-    .page-subtitle { color: var(--text-light); margin-bottom: 2rem; }
-    .card { margin-bottom: 1.5rem; }
+    .page { padding: clamp(3rem, 6vw, 5rem) 0; max-width: 760px; }
+    .page-title {
+      margin-bottom: 0.5rem;
+      font-size: clamp(2.35rem, 5vw, 3.2rem);
+      font-weight: 500;
+      line-height: 1;
+    }
+    .page-subtitle {
+      max-width: 56ch;
+      color: var(--text-light);
+      margin-bottom: 2rem;
+    }
+    .card {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 36px rgba(26, 20, 16, 0.05);
+    }
+    .page > .card:first-of-type .card-body { padding: clamp(1.25rem, 3vw, 2rem); }
     .row-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .form-group-btn { display: flex; align-items: flex-end; }
     .btn-block { width: 100%; justify-content: center; }
     .btn-danger { background: var(--error); color: #fff; border: none; }
     .btn-outline-danger { background: transparent; color: var(--error); border: 1px solid var(--error); }
     .btn-outline-danger:hover { background: var(--error); color: #fff; }
-    .card-empty { text-align: center; }
+    .card-empty {
+      text-align: center;
+      border: 0;
+      background: var(--warm);
+      box-shadow: none;
+    }
+    .card-empty .card-body { padding: 2rem; }
+    .card-empty .empty-icon { color: var(--gold-dark); font-size: 1.5rem; }
     .hint { color: var(--text-light); font-size: 0.9rem; margin-top: 0.5rem; }
+    .result {
+      border: 0;
+      border-top: 2px solid var(--gold);
+      border-radius: 0;
+      box-shadow: none;
+    }
     .result-head {
       display: flex; justify-content: space-between; align-items: center;
       padding-bottom: 1.25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border);
@@ -198,13 +226,19 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       display: block; font-size: 0.75rem; text-transform: uppercase;
       letter-spacing: 0.04em; color: var(--text-light); font-weight: 600;
     }
-    .result-code { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.05em; color: var(--gold-dark); }
+    .result-code {
+      font-family: var(--font-heading);
+      font-size: 1.8rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--gold-dark);
+    }
     .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 1.5rem; }
     .detail dt { font-size: 0.8125rem; color: var(--text-light); margin-bottom: 0.25rem; }
     .detail dd { font-weight: 600; }
     .notice {
-      background: var(--bg); border-left: 3px solid var(--gold);
-      padding: 0.875rem 1rem; border-radius: var(--radius); margin-bottom: 1rem;
+      background: var(--warm); border-left: 2px solid var(--gold);
+      padding: 0.875rem 1rem; border-radius: 0; margin-bottom: 1rem;
       font-size: 0.9rem;
     }
     .notice-danger { border-left-color: var(--error); }
@@ -223,8 +257,10 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
     .legal-hint { margin-top: 1rem; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @media (max-width: 640px) {
+      .page { padding: 2.75rem 0 3.5rem; }
       .row-form { grid-template-columns: 1fr; }
       .detail-grid { grid-template-columns: 1fr 1fr; }
+      .cancel-actions { flex-direction: column; }
     }
   `,
 })

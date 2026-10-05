@@ -18,7 +18,7 @@ import { TERMINOS_VERSION } from '../../legal/legal-content';
       <h1>Reservar Habitacion</h1>
 
       @if (loading()) {
-        <p class="text-center" style="padding:3rem;color:var(--text-light)">Cargando informacion...</p>
+        <p class="loading-state" role="status">Cargando informacion...</p>
       } @else if (loadError()) {
         <div class="empty card">
           <div class="card-body text-center">
@@ -217,21 +217,48 @@ import { TERMINOS_VERSION } from '../../legal/legal-content';
       accent-color: var(--gold-dark);
       cursor: pointer;
     }
-    .page { padding: 2rem 0 4rem; }
-    .page h1 { margin-bottom: 1.5rem; }
+    .page { padding: clamp(3rem, 6vw, 5rem) 0; }
+    .loading-state {
+      padding: 2.5rem 1rem;
+      border-block: 1px solid var(--border);
+      color: var(--text-light);
+      text-align: center;
+    }
+    .page > h1 {
+      margin-bottom: 1.75rem;
+      font-size: clamp(2.4rem, 5vw, 3.5rem);
+      font-weight: 500;
+      line-height: 1;
+    }
     .form-layout {
       display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 1.5rem;
+      grid-template-columns: minmax(0, 1fr) 290px;
+      gap: clamp(1.25rem, 3vw, 2rem);
       align-items: start;
+    }
+    .form-layout > .card {
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 36px rgba(26, 20, 16, 0.06);
+    }
+    .form-layout > .card > .card-body { padding: clamp(1.25rem, 3vw, 2rem); }
+    .form-layout > .card h3 {
+      margin-bottom: 1.5rem;
+      font-size: 1.8rem;
+      font-weight: 500;
+    }
+    .form-layout .form-label {
+      color: var(--dark-2);
+      font-size: 0.76rem;
+      letter-spacing: 0.04em;
     }
     .room-summary {
       display: flex;
       align-items: center;
       gap: 1rem;
       padding: 1rem;
-      background: var(--bg);
-      border-radius: var(--radius);
+      background: var(--warm);
+      border-radius: 0;
+      border-left: 2px solid var(--gold);
       margin-bottom: 1.5rem;
     }
     .room-badge {
@@ -252,16 +279,31 @@ import { TERMINOS_VERSION } from '../../legal/legal-content';
       gap: 1rem;
     }
 
-    .summary-card { position: sticky; top: 5.5rem; }
-    .summary-card h4 { margin-bottom: 1rem; }
+    .summary-card {
+      position: sticky;
+      top: 5.5rem;
+      color: rgba(255, 255, 255, 0.82);
+      border: 0;
+      border-radius: 0;
+      background: var(--dark);
+      box-shadow: none;
+    }
+    .summary-card .card-body { padding: 1.5rem; }
+    .summary-card h4 {
+      margin-bottom: 1rem;
+      color: #fff;
+      font-family: var(--font-heading);
+      font-size: 1.55rem;
+      font-weight: 500;
+    }
     .summary-row {
       display: flex;
       justify-content: space-between;
       padding: 0.625rem 0;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
       font-size: 0.9375rem;
     }
-    .summary-row span:last-child { font-weight: 500; }
+    .summary-row span:last-child { font-weight: 500; color: #fff; }
     .summary-total {
       display: flex;
       justify-content: space-between;
@@ -271,12 +313,21 @@ import { TERMINOS_VERSION } from '../../legal/legal-content';
       font-weight: 700;
     }
     .total-value {
-      color: var(--gold-dark);
+      color: var(--gold-light);
     }
 
-    .empty { margin-top: 2rem; padding: 3rem; }
+    .empty {
+      margin-top: 2rem;
+      padding: 1rem;
+      border: 0;
+      border-radius: 0;
+      background: var(--warm);
+      box-shadow: none;
+    }
+    .empty .card-body { padding: 1.5rem; }
 
     @media (max-width: 768px) {
+      .page { padding: 2.75rem 0 3.5rem; }
       .form-layout { grid-template-columns: 1fr; }
       .form-row { grid-template-columns: 1fr; }
       .summary-card { position: static; }

@@ -12,7 +12,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
   template: `
     <div class="container page">
       @if (loading()) {
-        <p class="text-center" style="padding:3rem;color:var(--text-light)">Cargando habitacion...</p>
+        <p class="loading-state" role="status">Cargando habitacion...</p>
       } @else if (loadError()) {
         <div class="empty card">
           <div class="card-body text-center">
@@ -81,11 +81,16 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
     </div>
   `,
   styles: `
-    .page { padding: 2rem 0 4rem; }
-    .page h1 { margin-bottom: 1.5rem; }
+    .page { padding: clamp(3rem, 6vw, 5rem) 0; }
+    .loading-state {
+      padding: 2.5rem 1rem;
+      border-block: 1px solid var(--border);
+      color: var(--text-light);
+      text-align: center;
+    }
     .back-link {
       display: inline-block;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.75rem;
       color: var(--text-light);
       font-size: 0.9375rem;
       transition: color 0.2s;
@@ -94,23 +99,30 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 
     .detail-layout {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      align-items: start;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: clamp(2rem, 5vw, 4.5rem);
+      align-items: center;
     }
     .detail-image {
-      border-radius: var(--radius-lg);
-      height: 400px;
+      height: min(62vw, 520px);
+      min-height: 360px;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 300px;
     }
     .room-number {
-      font-size: 5rem;
-      font-weight: 800;
-      color: rgba(255, 255, 255, 0.6);
+      font-family: var(--font-heading);
+      font-size: clamp(5rem, 10vw, 8rem);
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.78);
     }
+    .detail-info .card {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .detail-info .card-body { padding: 0; }
 
     .detail-header {
       display: flex;
@@ -119,7 +131,12 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       gap: 1rem;
       margin-bottom: 1rem;
     }
-    .detail-header h1 { margin: 0; }
+    .detail-header h1 {
+      margin: 0;
+      font-size: clamp(2.3rem, 4.5vw, 3.4rem);
+      font-weight: 500;
+      line-height: 1;
+    }
     .description {
       color: var(--text-light);
       line-height: 1.7;
@@ -133,7 +150,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       padding: 1.25rem 0;
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.75rem;
     }
     .spec-label {
       display: block;
@@ -151,6 +168,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
+      padding-top: 0.25rem;
     }
     .price-value {
       font-size: 1.75rem;
@@ -163,11 +181,20 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       color: var(--text-light);
     }
 
-    .empty { margin-top: 2rem; padding: 3rem; }
+    .empty {
+      margin-top: 2rem;
+      padding: 1rem;
+      border: 0;
+      border-radius: 0;
+      background: var(--warm);
+      box-shadow: none;
+    }
+    .empty .card-body { padding: 1.5rem; }
 
     @media (max-width: 768px) {
-      .detail-layout { grid-template-columns: 1fr; }
-      .detail-image { height: 250px; }
+      .page { padding: 2.75rem 0 3.5rem; }
+      .detail-layout { grid-template-columns: 1fr; gap: 1.75rem; }
+      .detail-image { height: 270px; min-height: 270px; }
       .room-number { font-size: 3rem; }
       .specs { grid-template-columns: 1fr; }
       .price-row { flex-direction: column; align-items: flex-start; }

@@ -87,6 +87,8 @@ import { Subscription } from 'rxjs';
       text-decoration: none;
       letter-spacing: 0.3px;
     }
+    .navbar.has-bg .logo-icon { color: var(--gold-light); }
+    .navbar.has-bg .navbar-brand:hover { color: var(--gold-light); }
     .logo-icon {
       font-size: 1.4rem;
       line-height: 1;
@@ -100,6 +102,10 @@ import { Subscription } from 'rxjs';
       border: none;
       padding: 0.25rem;
       z-index: 1001;
+    }
+    .hamburger:focus-visible,
+    .fullmenu-close:focus-visible {
+      outline-color: var(--gold-light);
     }
     .hamburger span {
       display: block;

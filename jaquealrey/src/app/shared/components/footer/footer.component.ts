@@ -56,13 +56,13 @@ import { DATOS_RESPONSABLE } from '../../../features/public/legal/legal-content'
     .footer {
       background: var(--dark);
       color: rgba(255, 255, 255, 0.8);
-      padding: 60px 0 0;
+      padding: clamp(3.5rem, 7vw, 5rem) 0 0;
       margin-top: auto;
     }
     .footer-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1.2fr;
-      gap: 40px;
+      grid-template-columns: minmax(220px, 1.8fr) repeat(2, minmax(120px, 0.8fr)) minmax(190px, 1.2fr);
+      gap: clamp(1.5rem, 3vw, 2.75rem);
       padding-bottom: 40px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
@@ -87,6 +87,7 @@ import { DATOS_RESPONSABLE } from '../../../features/public/legal/legal-content'
       font-size: 0.9rem;
       font-weight: 600;
       margin-bottom: 16px;
+      letter-spacing: 0.04em;
     }
     .footer-links ul {
       display: flex;
@@ -99,6 +100,8 @@ import { DATOS_RESPONSABLE } from '../../../features/public/legal/legal-content'
       font-size: 0.85rem;
       transition: var(--transition);
     }
+    .footer-links a,
+    .footer-contact a { text-underline-offset: 0.2em; }
     .footer-links a:hover,
     .footer-contact a:hover { color: var(--gold-light); }
     .footer-contact p {
@@ -122,8 +125,14 @@ import { DATOS_RESPONSABLE } from '../../../features/public/legal/legal-content'
     }
     .footer-bottom p { margin: 0 0 4px; }
 
-    @media (max-width: 768px) {
-      .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+    @media (max-width: 900px) {
+      .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .footer-brand { grid-column: 1 / -1; }
+    }
+    @media (max-width: 520px) {
+      .footer-grid { grid-template-columns: 1fr; gap: 1.75rem; }
+      .footer-brand { grid-column: auto; }
+      .footer-bottom { text-align: left; }
     }
   `
 })

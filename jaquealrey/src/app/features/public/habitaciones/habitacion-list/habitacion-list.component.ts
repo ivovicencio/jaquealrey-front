@@ -56,7 +56,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 
         <div class="content">
           @if (loading()) {
-            <p class="text-center" style="padding:3rem;color:var(--text-light)">Cargando habitaciones...</p>
+            <p class="loading-state" role="status">Cargando habitaciones...</p>
           } @else if (loadError()) {
             <div class="empty card">
               <div class="card-body text-center">
@@ -104,33 +104,51 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
     </div>
   `,
   styles: `
-    .page { padding: 2rem 0 4rem; }
+    .page { padding: clamp(3rem, 6vw, 5rem) 0; }
     .page-header {
-      text-align: center;
-      margin-bottom: 2.5rem;
+      max-width: 760px;
+      margin: 0 0 2.5rem;
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid var(--border);
     }
-    .page-header h1 { margin-bottom: 0.5rem; }
+    .page-header h1 {
+      margin-bottom: 0.4rem;
+      font-size: clamp(2.4rem, 5vw, 3.5rem);
+      font-weight: 500;
+      line-height: 1;
+    }
     .section-tag {
       display: inline-block;
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 2.5px;
-      color: var(--gold);
+      color: var(--gold-dark);
       font-weight: 500;
       margin-bottom: 8px;
     }
     .page-subtitle {
       color: var(--text-light);
-      font-size: 0.95rem;
+      max-width: 52ch;
+      font-size: 1rem;
       margin-bottom: 0;
     }
 
     .layout {
       display: grid;
-      grid-template-columns: 260px 1fr;
-      gap: 1.5rem;
+      grid-template-columns: 230px minmax(0, 1fr);
+      gap: clamp(1.5rem, 4vw, 3.5rem);
       align-items: start;
     }
+    .sidebar.card {
+      position: sticky;
+      top: 5.5rem;
+      border: 0;
+      border-right: 1px solid var(--border-strong);
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .sidebar .card-body { padding: 0 1.5rem 0 0; }
     .sidebar h4 { margin-bottom: 1rem; }
     .filter-group { margin-bottom: 1.25rem; }
     .checkbox {
@@ -152,23 +170,39 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       color: var(--text-light);
       margin-bottom: 1rem;
     }
+    .loading-state {
+      padding: 2.5rem 1rem;
+      border-block: 1px solid var(--border);
+      color: var(--text-light);
+      text-align: center;
+    }
     .rooms-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: clamp(1rem, 3vw, 2.25rem);
+      row-gap: 2rem;
     }
-    .room-card { overflow: hidden; }
+    .room-card {
+      overflow: hidden;
+      border: 0;
+      border-bottom: 1px solid var(--border-strong);
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
     .room-image {
-      height: 160px;
+      height: clamp(170px, 20vw, 230px);
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
     }
+    .room-card .card-body { padding: 1rem 0 1.25rem; }
     .room-number {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: rgba(255, 255, 255, 0.7);
+      font-family: var(--font-heading);
+      font-size: 4rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.84);
     }
     .room-header {
       display: flex;
@@ -198,15 +232,30 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       font-size: 0.8125rem;
       color: var(--text-light);
     }
-    .empty { padding: 2rem; }
+    .empty {
+      padding: 1rem;
+      border: 0;
+      border-radius: 0;
+      background: var(--warm);
+      box-shadow: none;
+    }
+    .empty .card-body { padding: 1.5rem; }
 
     @media (max-width: 1024px) {
       .rooms-grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 768px) {
-      .layout { grid-template-columns: 1fr; }
-      .sidebar { order: -1; }
+      .page { padding: 2.75rem 0 3.5rem; }
+      .layout { grid-template-columns: 1fr; gap: 1.75rem; }
+      .sidebar.card {
+        position: static;
+        border-right: 0;
+        border-bottom: 1px solid var(--border-strong);
+        padding-bottom: 1.25rem;
+      }
+      .sidebar .card-body { padding: 0; }
       .rooms-grid { grid-template-columns: 1fr; }
+      .room-image { height: 220px; }
     }
   `
 })
