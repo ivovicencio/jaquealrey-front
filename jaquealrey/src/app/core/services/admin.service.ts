@@ -57,12 +57,11 @@ export class AdminService {
   updateReservaEstado(
     id: number,
     estado: string,
-    notas?: string,
-    forzar_sin_pago?: boolean
+    notas?: string
   ): Observable<ApiResponse<Reserva>> {
     return this.http.put<ApiResponse<Reserva>>(
       `${this.apiUrl}/admin/reservas/${id}/estado`,
-      { estado, notas, forzar_sin_pago },
+      { estado, notas },
       { headers: this.adminHeaders() }
     );
   }
@@ -110,6 +109,12 @@ export class AdminService {
   // Publico: el huesped necesita el alias para transferir.
   getConfigCobro(): Observable<ApiResponse<ConfigCobro>> {
     return this.http.get<ApiResponse<ConfigCobro>>(`${this.apiUrl}/pagos/configuracion`);
+  }
+
+  getAdminConfigCobro(): Observable<ApiResponse<ConfigCobro>> {
+    return this.http.get<ApiResponse<ConfigCobro>>(`${this.apiUrl}/pagos/configuracion/admin`, {
+      headers: this.adminHeaders(),
+    });
   }
 
   updateConfigCobro(clave: string, valor: string): Observable<ApiResponse<{ clave: string; valor: string }>> {
@@ -225,22 +230,14 @@ export class AdminService {
     });
   }
 
-  /**
-   * Check-in.
-   *
-   * `documento` y `nacionalidad` son obligatorios en la API. Es a propósito: en
-   * recepción el DNI está a la vista, así que no cuesta nada, y la web NO los
-   * pide (PASOS.md 24.1). El tipo los marca como tales para que el formulario no
-   * los pueda mandar por olvido y se lleve un 400 del servidor.
-   */
+  /** Marca el inicio de una estadía; los datos personales son opcionales. */
   checkIn(
     id: number,
     data: {
-      documento: string;
-      nacionalidad: string;
+      documento?: string;
+      nacionalidad?: string;
       entregado_a?: string;
       notas?: string;
-      forzar_sin_pago?: boolean;
     }
   ): Observable<ApiResponse<Reserva>> {
     return this.http.post<ApiResponse<Reserva>>(
@@ -252,7 +249,7 @@ export class AdminService {
 
   checkOut(
     id: number,
-    data?: { notas?: string; forzar_sin_pago?: boolean }
+    data?: { notas?: string }
   ): Observable<ApiResponse<Reserva>> {
     return this.http.post<ApiResponse<Reserva>>(
       `${this.apiUrl}/admin/reservas/${id}/check-out`,

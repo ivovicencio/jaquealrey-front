@@ -8,13 +8,15 @@ import { ToastService } from '../../../../shared/services/toast.service';
 import { Habitacion } from '../../../../core/models/habitacion.model';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 import { TERMINOS_VERSION } from '../../legal/legal-content';
+import { BackButtonComponent } from '../../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-reserva-form',
   standalone: true,
-  imports: [RouterLink, FormsModule, CurrencyArPipe],
+  imports: [RouterLink, FormsModule, CurrencyArPipe, BackButtonComponent],
   template: `
     <div class="container page">
+      <app-back-button fallbackUrl="/habitaciones" fallbackLabel="Volver a Habitaciones" />
       <h1>Reservar Habitacion</h1>
 
       @if (loading()) {
@@ -42,7 +44,11 @@ import { TERMINOS_VERSION } from '../../legal/legal-content';
               <h3>Datos de la Reserva</h3>
 
               <div class="room-summary">
-                <div class="room-badge" [style.background]="gradient()">
+                <div
+                  class="room-badge"
+                  [class.sin-foto]="!imagenes.tieneImagen(habitacion())"
+                  [style.background]="gradient()"
+                >
                   <span>{{ habitacion()!.numero }}</span>
                 </div>
                 <div>
@@ -273,6 +279,7 @@ import { TERMINOS_VERSION } from '../../legal/legal-content';
       font-size: 1.25rem;
       flex-shrink: 0;
     }
+    .room-badge.sin-foto { color: var(--text-light); }
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -338,7 +345,7 @@ export class ReservaFormComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private habitacionService = inject(HabitacionService);
-  private imagenes = inject(HabitacionImagenService);
+  readonly imagenes = inject(HabitacionImagenService);
   private reservaService = inject(ReservaService);
   private toast = inject(ToastService);
 

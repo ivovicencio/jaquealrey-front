@@ -11,8 +11,6 @@ export interface DashboardData {
   facturado_mes_actual: number;
   // Dinero efectivamente recibido este mes (pagos confirmados por fecha de pago).
   cobrado_mes_actual: number;
-  // facturado - cobrado. Es la plata que hay que perseguir.
-  a_cobrar_mes: number;
   total_clientes: number;
   habitaciones_activas: number;
 }

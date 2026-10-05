@@ -63,7 +63,7 @@ import { AuthService } from '../../../core/services/auth.service';
                 <span class="action-label">Hoy (recepción)</span>
               </div>
             </a>
-            <a routerLink="/admin/walk-in" class="card action-card">
+            <a routerLink="/admin/walk-in" [state]="{ returnUrl: '/admin' }" class="card action-card">
               <div class="card-body action-body">
                 <span class="action-icon"><i class="fas fa-user-plus"></i></span>
                 <span class="action-label">Walk-in</span>
@@ -99,6 +99,13 @@ import { AuthService } from '../../../core/services/auth.service';
                 <span class="action-label">Historial</span>
               </div>
             </a>
+          </div>
+        </div>
+      } @else {
+        <div class="card" role="alert">
+          <div class="card-body">
+            <p>{{ loadError() }}</p>
+            <button type="button" class="btn btn-primary" (click)="load()">Reintentar</button>
           </div>
         </div>
       }
@@ -238,6 +245,7 @@ export class DashboardComponent implements OnInit {
 
   data = signal<DashboardData | null>(null);
   loading = signal(true);
+  loadError = signal('No se pudieron cargar los datos del panel.');
 
   stats = signal<{ icon: string; value: string | number; label: string }[]>([]);
 
@@ -271,6 +279,7 @@ export class DashboardComponent implements OnInit {
   }
 
   load() {
+    this.loading.set(true);
     this.adminService.getDashboard().subscribe({
       next: (res) => {
         if (res.status === '1') {
@@ -288,19 +297,22 @@ export class DashboardComponent implements OnInit {
               value: '$' + res.data.cobrado_mes_actual.toLocaleString('es-AR'),
               label: 'Cobrado del Mes',
             },
-            {
-              icon: 'fas fa-hand-holding-dollar',
-              value: '$' + res.data.a_cobrar_mes.toLocaleString('es-AR'),
-              label: 'Pendiente de Cobro',
-            },
             { icon: 'fas fa-users', value: res.data.total_clientes, label: 'Total Clientes' },
             { icon: 'fas fa-bed', value: res.data.habitaciones_activas, label: 'Habitaciones Activas' },
           ]);
+        } else {
+          this.loadError.set(res.msg || 'No se pudieron cargar los datos del panel.');
         }
         this.loading.set(false);
       },
-      error: () => {
-        this.toast.error('Error al cargar el dashboard');
+      error: (error: { status?: number; error?: { msg?: string } }) => {
+        const message =
+          error.error?.msg ||
+          (error.status === 429
+            ? 'Hay muchas solicitudes recientes. Esperá un momento y reintentá.'
+            : 'No se pudieron cargar los datos del panel.');
+        this.loadError.set(message);
+        this.toast.error(message);
         this.loading.set(false);
       },
     });

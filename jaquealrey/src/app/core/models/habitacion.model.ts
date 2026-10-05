@@ -6,7 +6,7 @@ export interface Habitacion {
   camas_individuales: number;
   camas_matrimoniales: number;
   capacidad_max: number;
-  tipo: 'Doble' | 'Triple' | 'Cuádruple';
+  tipo: 'Doble' | 'Triple' | 'Cuádruple' | 'Quíntuple' | 'Departamento' | 'Cabaña';
   precio_noche: number;
   activa: boolean;
   created_at: string;

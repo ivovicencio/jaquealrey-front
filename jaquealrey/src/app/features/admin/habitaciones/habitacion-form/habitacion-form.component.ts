@@ -3,16 +3,18 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../../core/services/admin.service';
 import { HabitacionService } from '../../../../core/services/habitacion.service';
+import { Habitacion } from '../../../../core/models/habitacion.model';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { BackButtonComponent } from '../../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-habitacion-form',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, BackButtonComponent],
   template: `
     <div class="container admin-page">
       <div class="admin-header">
-        <a routerLink="/admin/habitaciones" class="back-link"><i class="fas fa-arrow-left"></i> Volver a Habitaciones</a>
+        <app-back-button fallbackUrl="/admin/habitaciones" fallbackLabel="Volver a Habitaciones" />
         <h1 class="page-title">{{ isEdit() ? 'Editar Habitacion' : 'Nueva Habitacion' }}</h1>
       </div>
 
@@ -71,9 +73,9 @@ import { ToastService } from '../../../../shared/services/toast.service';
                 <div class="form-group">
                   <label class="form-label" for="tipo">Tipo</label>
                   <select class="form-select" id="tipo" name="tipo" [(ngModel)]="form.tipo" required>
-                    <option value="Doble">Doble</option>
-                    <option value="Triple">Triple</option>
-                    <option value="Cuádruple">Cuádruple</option>
+                    @for (tipo of tipos; track tipo) {
+                      <option [value]="tipo">{{ tipo }}</option>
+                    }
                   </select>
                 </div>
 
@@ -192,7 +194,7 @@ export class AdminHabitacionFormComponent implements OnInit {
   editId = signal<number | null>(null);
   loadingData = signal(false);
   saving = signal(false);
-
+  readonly tipos = ['Doble', 'Triple', 'Cuádruple', 'Quíntuple', 'Departamento', 'Cabaña'] as const;
   form = {
     numero: null as number | null,
     nombre: '',
@@ -200,7 +202,7 @@ export class AdminHabitacionFormComponent implements OnInit {
     camas_individuales: 0,
     camas_matrimoniales: 0,
     capacidad_max: 2,
-    tipo: 'Doble' as 'Doble' | 'Triple' | 'Cuádruple',
+    tipo: 'Doble' as Habitacion['tipo'],
     precio_noche: 0,
     activa: true,
   };
@@ -242,10 +244,11 @@ export class AdminHabitacionFormComponent implements OnInit {
   }
 
   onSubmit() {
-    if (!this.form.numero || !this.form.nombre || !this.form.tipo) return;
+    const numero = this.form.numero;
+    if (numero === null || numero < 1 || !this.form.nombre || !this.form.tipo) return;
 
     this.saving.set(true);
-    const payload: Partial<any> = { ...this.form };
+    const payload: Partial<Habitacion> = { ...this.form, numero };
 
     const req$ = this.isEdit() && this.editId()
       ? this.adminService.updateHabitacion(this.editId()!, payload)
@@ -261,10 +264,11 @@ export class AdminHabitacionFormComponent implements OnInit {
         }
         this.saving.set(false);
       },
-      error: () => {
-        this.toast.error('Error al guardar la habitación');
+      error: (error) => {
+        this.toast.error(error?.error?.msg || 'Error al guardar la habitación');
         this.saving.set(false);
       },
     });
   }
+
 }

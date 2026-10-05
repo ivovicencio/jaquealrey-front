@@ -14,11 +14,12 @@ import { NotificationService } from '../../../core/services/notification.service
 import { ToastService } from '../../../shared/services/toast.service';
 import { AppModeService } from '../../../core/services/app-mode.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-admin-hoy',
   standalone: true,
-  imports: [RouterLink, CurrencyPipe, DatePipe, FormsModule],
+  imports: [RouterLink, CurrencyPipe, DatePipe, FormsModule, BackButtonComponent],
   template: `
     <div class="container admin-page">
       @if (appMode.esAppEscritorio()) {
@@ -35,11 +36,12 @@ import { AuthService } from '../../../core/services/auth.service';
       }
 
       <div class="admin-header">
+        <app-back-button fallbackUrl="/admin" fallbackLabel="Volver al Panel" />
         <h1 class="page-title">Hoy</h1>
         <p class="subtitle">{{ fecha() | date: 'fullDate' : undefined : 'es-AR' }}</p>
         <div class="header-actions">
-          <a routerLink="/admin/walk-in" class="btn btn-primary">+ Walk-in</a>
-          <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()">
+          <a routerLink="/admin/walk-in" [state]="{ returnUrl: '/admin/hoy' }" class="btn btn-primary">+ Walk-in</a>
+          <button type="button" class="btn btn-ghost" (click)="load()">
             Actualizar
           </button>
         </div>
@@ -75,10 +77,6 @@ import { AuthService } from '../../../core/services/auth.service';
                 @if (r.estado === 'En_Casa') {
                   La habitación queda en limpieza.
                 }
-                @if (debeDinero(r)) {
-                  <strong>Queda un saldo impago de
-                    {{ r.saldo | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}</strong>.
-                }
               </p>
               <div class="actions">
                 <button type="button" class="btn btn-ghost" (click)="noShowPendiente.set(null)">
@@ -106,8 +104,12 @@ import { AuthService } from '../../../core/services/auth.service';
                     {{ r.cliente_telefono }} ·
                     {{ r.precio_total | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}
                   </span>
+                  @if (r.pago_reportado_detalle) {
+                    <span class="muted">{{ r.pago_reportado_detalle }}</span>
+                  }
                 </div>
-                <a class="btn btn-primary" [routerLink]="['/admin/reservas', r.id]">Revisar</a>
+                <a class="btn btn-primary" [routerLink]="['/admin/reservas', r.id]"
+                  [state]="{ returnUrl: '/admin/hoy' }">Revisar</a>
               </div>
             }
           </section>
@@ -124,10 +126,8 @@ import { AuthService } from '../../../core/services/auth.service';
                   <strong>Hab. {{ r.habitacion_numero }}</strong>
                   <span>{{ r.cliente_nombre }} {{ r.cliente_apellido }}</span>
                   <span class="muted">{{ r.codigo }} · {{ r.huespedes }} pax</span>
-                  @if (debeDinero(r)) {
-                    <span class="alerta-saldo">
-                      Debe {{ r.saldo | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}
-                    </span>
+                  @if (!r.pago_completo) {
+                    <span class="alerta-pago">Pago pendiente de confirmar</span>
                   }
                   @if (hayAvisoHabitacion(r)) {
                     <span class="muted">{{ avisoHabitacion(r) }}</span>
@@ -142,14 +142,13 @@ import { AuthService } from '../../../core/services/auth.service';
                   >
                     No se presentó
                   </button>
-                  <button
-                    type="button"
-                    class="btn btn-primary"
-                    (click)="abrirCheckIn(r)"
-                    [disabled]="busyId() === r.id"
-                  >
-                    Dar llave
-                  </button>
+                  @if (r.pago_completo) {
+                    <button type="button" class="btn btn-primary" (click)="abrirCheckIn(r)"
+                      [disabled]="busyId() === r.id">Dar llave</button>
+                  } @else {
+                    <a class="btn btn-outline" [routerLink]="['/admin/reservas', r.id]"
+                      [state]="{ returnUrl: '/admin/hoy' }">Revisar pago</a>
+                  }
                 </div>
               </div>
 
@@ -161,23 +160,6 @@ import { AuthService } from '../../../core/services/auth.service';
                   </div>
 
                   <div class="grid">
-                    <label>Documento *
-                      <input
-                        [(ngModel)]="checkInForm.documento"
-                        name="documento"
-                        required
-                        minlength="6"
-                        autocomplete="off"
-                      />
-                    </label>
-                    <label>Nacionalidad *
-                      <input
-                        [(ngModel)]="checkInForm.nacionalidad"
-                        name="nacionalidad"
-                        required
-                        autocomplete="country"
-                      />
-                    </label>
                     <label>Llave entregada a
                       <input
                         [(ngModel)]="checkInForm.entregado_a"
@@ -190,18 +172,10 @@ import { AuthService } from '../../../core/services/auth.service';
                     </label>
                   </div>
 
-                  @if (debeDinero(r)) {
-                    <label class="check">
-                      <input type="checkbox" [(ngModel)]="checkInForm.forzar_sin_pago" name="forzar" />
-                      Entra igual dejando un saldo de
-                      {{ r.saldo | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}
-                    </label>
-                  }
-
                   <div class="actions">
                     <button type="button" class="btn btn-ghost" (click)="cerrarCheckIn()">Cancelar</button>
                     <button type="submit" class="btn btn-primary" [disabled]="busyId() === r.id">
-                      {{ busyId() === r.id ? 'Registrando...' : 'Confirmar check-in' }}
+                      {{ busyId() === r.id ? 'Registrando...' : 'Marcar En uso' }}
                     </button>
                   </div>
                 </form>
@@ -213,17 +187,15 @@ import { AuthService } from '../../../core/services/auth.service';
         @if (walkIns().length > 0) {
           <section class="bloque">
             <h2>Walk-ins ({{ walkIns().length }})</h2>
-            <p class="vacio">Entraron por recepción. Pediles el documento antes de dar la llave.</p>
+            <p class="vacio">Reservas creadas directamente desde recepción.</p>
             @for (r of walkIns(); track r.id) {
               <div class="card fila">
                 <div class="fila-main">
                   <strong>Hab. {{ r.habitacion_numero }}</strong>
                   <span>{{ r.cliente_nombre }} {{ r.cliente_apellido }}</span>
                   <span class="muted">{{ r.codigo }} · {{ r.huespedes }} pax</span>
-                  @if (debeDinero(r)) {
-                    <span class="alerta-saldo">
-                      Debe {{ r.saldo | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}
-                    </span>
+                  @if (!r.pago_completo) {
+                    <span class="alerta-pago">Pago pendiente: confirmalo antes de entregar la llave</span>
                   }
                   @if (hayAvisoHabitacion(r)) {
                     <span class="muted">{{ avisoHabitacion(r) }}</span>
@@ -238,14 +210,13 @@ import { AuthService } from '../../../core/services/auth.service';
                   >
                     No se presentó
                   </button>
-                  <button
-                    type="button"
-                    class="btn btn-primary"
-                    (click)="abrirCheckIn(r)"
-                    [disabled]="busyId() === r.id"
-                  >
-                    Dar llave
-                  </button>
+                  @if (r.pago_completo) {
+                    <button type="button" class="btn btn-primary" (click)="abrirCheckIn(r)"
+                      [disabled]="busyId() === r.id">Dar llave</button>
+                  } @else {
+                    <a class="btn btn-outline" [routerLink]="['/admin/reservas', r.id]"
+                      [state]="{ returnUrl: '/admin/hoy' }">Revisar pago</a>
+                  }
                 </div>
               </div>
 
@@ -257,23 +228,6 @@ import { AuthService } from '../../../core/services/auth.service';
                   </div>
 
                   <div class="grid">
-                    <label>Documento *
-                      <input
-                        [(ngModel)]="checkInForm.documento"
-                        name="documento"
-                        required
-                        minlength="6"
-                        autocomplete="off"
-                      />
-                    </label>
-                    <label>Nacionalidad *
-                      <input
-                        [(ngModel)]="checkInForm.nacionalidad"
-                        name="nacionalidad"
-                        required
-                        autocomplete="country"
-                      />
-                    </label>
                     <label>Llave entregada a
                       <input
                         [(ngModel)]="checkInForm.entregado_a"
@@ -299,20 +253,18 @@ import { AuthService } from '../../../core/services/auth.service';
         }
 
         <section class="bloque">
-          <h2>En casa ({{ enCasa().length }})</h2>
+          <h2>En uso ({{ enCasa().length }})</h2>
           @if (enCasa().length === 0) {
-            <p class="vacio">Nadie en casa.</p>
+            <p class="vacio">No hay habitaciones en uso.</p>
           } @else {
             @for (r of enCasa(); track r.id) {
               <div class="card fila">
                 <div class="fila-main">
                   <strong>Hab. {{ r.habitacion_numero }}</strong>
                   <span>{{ r.cliente_nombre }} {{ r.cliente_apellido }}</span>
-                  <span class="muted">hasta {{ r.fecha_salida | date: 'dd/MM' }}</span>
-                  @if (debeDinero(r)) {
-                    <span class="alerta-saldo">
-                      Debe {{ r.saldo | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}
-                    </span>
+                  <span class="muted">Salida prevista: {{ r.fecha_salida | date: 'dd/MM/yyyy' }}</span>
+                  @if (!r.pago_completo) {
+                    <span class="alerta-pago">Pago pendiente de confirmar</span>
                   }
                 </div>
                 <div class="fila-acciones">
@@ -324,15 +276,14 @@ import { AuthService } from '../../../core/services/auth.service';
                   >
                     No se presentó
                   </button>
-                  @if (esSalidaHoy(r)) {
-                    <button
-                      type="button"
-                      class="btn btn-primary"
-                      (click)="pedirCheckOut(r)"
-                      [disabled]="busyId() === r.id"
-                    >
-                      Marcar salida
-                    </button>
+                  @if (!esSalidaHoy(r)) {
+                    @if (r.pago_completo) {
+                      <button type="button" class="btn btn-primary" (click)="pedirCheckOut(r)"
+                        [disabled]="busyId() === r.id">Completar estadía</button>
+                    } @else {
+                      <a class="btn btn-outline" [routerLink]="['/admin/reservas', r.id]"
+                        [state]="{ returnUrl: '/admin/hoy' }">Revisar pago</a>
+                    }
                   }
                 </div>
               </div>
@@ -355,22 +306,10 @@ import { AuthService } from '../../../core/services/auth.service';
                     </label>
                   </div>
 
-                  @if (debeDinero(r)) {
-                    <p class="panel-alerta">
-                      Tiene un saldo de
-                      {{ r.saldo | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}.
-                      Sin la casilla de abajo el check-out se rechaza.
-                    </p>
-                    <label class="check">
-                      <input type="checkbox" [(ngModel)]="checkOutForm.forzar_sin_pago" name="forzar" />
-                      Registrar la salida igualmente y dejar la cuenta impaga
-                    </label>
-                  }
-
                   <div class="actions">
                     <button type="button" class="btn btn-ghost" (click)="cerrarCheckOut()">Cancelar</button>
                     <button type="submit" class="btn btn-primary" [disabled]="busyId() === r.id">
-                      {{ busyId() === r.id ? 'Registrando...' : 'Confirmar check-out' }}
+                      {{ busyId() === r.id ? 'Registrando...' : 'Completar estadía' }}
                     </button>
                   </div>
                 </form>
@@ -390,16 +329,18 @@ import { AuthService } from '../../../core/services/auth.service';
                   <strong>Hab. {{ r.habitacion_numero }}</strong>
                   <span>{{ r.cliente_nombre }} {{ r.cliente_apellido }}</span>
                   <span class="muted">{{ r.codigo }}</span>
+                  @if (!r.pago_completo) {
+                    <span class="alerta-pago">Pago pendiente de confirmar</span>
+                  }
                 </div>
                 <div class="fila-acciones">
-                  <button
-                    type="button"
-                    class="btn btn-primary"
-                    (click)="pedirCheckOut(r)"
-                    [disabled]="busyId() === r.id"
-                  >
-                    Marcar salida
-                  </button>
+                  @if (r.pago_completo) {
+                    <button type="button" class="btn btn-primary" (click)="pedirCheckOut(r)"
+                      [disabled]="busyId() === r.id">Completar estadía</button>
+                  } @else {
+                    <a class="btn btn-outline" [routerLink]="['/admin/reservas', r.id]"
+                      [state]="{ returnUrl: '/admin/hoy' }">Revisar pago</a>
+                  }
                 </div>
               </div>
 
@@ -420,18 +361,6 @@ import { AuthService } from '../../../core/services/auth.service';
                       <textarea [(ngModel)]="checkOutForm.notas" name="notas" rows="2"></textarea>
                     </label>
                   </div>
-
-                  @if (debeDinero(r)) {
-                    <p class="panel-alerta">
-                      Tiene un saldo de
-                      {{ r.saldo | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}.
-                      Sin la casilla de abajo el check-out se rechaza.
-                    </p>
-                    <label class="check">
-                      <input type="checkbox" [(ngModel)]="checkOutForm.forzar_sin_pago" name="forzar" />
-                      Registrar la salida igualmente y dejar la cuenta impaga
-                    </label>
-                  }
 
                   <div class="actions">
                     <button type="button" class="btn btn-ghost" (click)="cerrarCheckOut()">Cancelar</button>
@@ -535,15 +464,12 @@ import { AuthService } from '../../../core/services/auth.service';
     .fila-acciones { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
     .muted { color: var(--text-light); font-size: 0.85rem; }
 
-    /* Saldo pendiente: solo se pinta cuando hay que cobrar. Con "Saldo: $0"
-       en todas las filas el número real se pierde en el ruido. */
-    .alerta-saldo {
+    .alerta-pago {
       color: #b45309; font-size: 0.85rem; font-weight: 700;
     }
 
-    /* Panel de check-in / check-out. Es una card pegada a la fila que explica,
-       no un modal: el recepcionista tiene que ver la fila mientras carga el DNI,
-       no una pantalla aparte. */
+    /* Panel de check-in / check-out pegado a la fila, para conservar el contexto
+       de la reserva mientras recepción registra la acción. */
     .panel {
       margin: -0.25rem 0 0.75rem; padding: 1rem 1.25rem;
       border-left: 3px solid var(--gold);
@@ -656,22 +582,18 @@ export class AdminHoyComponent implements OnInit {
   // Id de la reserva con el panel de check-in / check-out abierto, o null.
   // Es un id y no un objeto a propósito: si el socket recarga la lista en medio
   // del ingreso, el objeto viejo quedaría apuntando a datos viejos y el panel
-  // enviaría el DNI de una fila que ya no está.
+  // enviaría datos de una fila que ya no está.
   checkInAbierto = signal<number | null>(null);
   checkOutAbierto = signal<number | null>(null);
   noShowPendiente = signal<ReservaHoy | null>(null);
 
   checkInForm = {
-    documento: '',
-    nacionalidad: '',
     entregado_a: '',
     notas: '',
-    forzar_sin_pago: false,
   };
 
   checkOutForm = {
     notas: '',
-    forzar_sin_pago: false,
   };
 
   constructor() {
@@ -710,7 +632,7 @@ export class AdminHoyComponent implements OnInit {
   }
 
   load() {
-    this.loading.set(true);
+    if (!this.fecha()) this.loading.set(true);
 
     this.adminService.getHoy().subscribe({
       next: (res) => {
@@ -777,20 +699,12 @@ export class AdminHoyComponent implements OnInit {
   // Check-in
   // ------------------------------------------------------------------
   //
-  // Abre el panel y precarga lo que reception ya sabe, para que el DNI sea lo
-  // unico que hay que tipear. Previa si el mismo huesped volvio antes: el
-  // backend pisa documento y nacionalidad con lo que mande el check-in, asi que
-  // un valor viejo queda desactualizado sin avisar.
-
   abrirCheckIn(r: ReservaHoy) {
     this.checkInAbierto.set(r.id);
     this.noShowPendiente.set(null);
     this.checkInForm = {
-      documento: '',
-      nacionalidad: '',
       entregado_a: this.nombreHuesped(r),
       notas: '',
-      forzar_sin_pago: false,
     };
   }
 
@@ -802,35 +716,17 @@ export class AdminHoyComponent implements OnInit {
     const id = this.checkInAbierto();
     if (id === null) return;
 
-    const documento = this.checkInForm.documento.trim();
-    const nacionalidad = this.checkInForm.nacionalidad.trim();
-
-    // Se valida aca y no solo en el backend para no gastar un request en un 400
-    // que ya se sabe. El backend igual lo valida: esta es la copia comoda, no la
-    // unica linea de defensa.
-    if (documento.length < 6) {
-      this.toast.error('El documento tiene que tener al menos 6 caracteres');
-      return;
-    }
-    if (!nacionalidad) {
-      this.toast.error('Falta la nacionalidad');
-      return;
-    }
-
     this.busyId.set(id);
     this.adminService
       .checkIn(id, {
-        documento,
-        nacionalidad,
         entregado_a: this.checkInForm.entregado_a.trim() || undefined,
         notas: this.checkInForm.notas.trim() || undefined,
-        forzar_sin_pago: this.checkInForm.forzar_sin_pago,
       })
       .subscribe({
         next: (res) => {
           this.busyId.set(null);
           if (res.status === '1') {
-            this.toast.success('Check-in registrado');
+            this.toast.success('Estadía marcada en uso');
             this.cerrarCheckIn();
             this.load();
           } else {
@@ -850,7 +746,7 @@ export class AdminHoyComponent implements OnInit {
 
   pedirCheckOut(r: ReservaHoy) {
     this.checkOutAbierto.set(r.id);
-    this.checkOutForm = { notas: '', forzar_sin_pago: false };
+    this.checkOutForm = { notas: '' };
   }
 
   cerrarCheckOut() {
@@ -861,13 +757,10 @@ export class AdminHoyComponent implements OnInit {
     const id = this.checkOutAbierto();
     if (id === null) return;
 
-    // El backend devuelve 409 con el monto si debe plata. Se pide la
-    // confirmacion antes de gastar el request, no despues del error.
     this.busyId.set(id);
     this.adminService
       .checkOut(id, {
         notas: this.checkOutForm.notas.trim() || undefined,
-        forzar_sin_pago: this.checkOutForm.forzar_sin_pago,
       })
       .subscribe({
         next: (res) => {
@@ -981,19 +874,6 @@ export class AdminHoyComponent implements OnInit {
   // ------------------------------------------------------------------
   // Helpers de template
   // ------------------------------------------------------------------
-
-  /**
-   * Saldo pendiente real, con la misma tolerancia que el backend.
-   *
-   * Sin esto, un pago de $100.000 contra un total de $100.000 deja un saldo de
-   * 0,0000001 por redondeo de float y la pantalla muestra "Debe $0" con la
-   * casilla de "entra igual debiendo" activada. Es el mismo EPSILON de
-   * pago.service.js: si cambia uno, cambia el otro.
-   */
-  debeDinero(r: ReservaHoy | null | undefined): boolean {
-    if (!r) return false;
-    return Number(r.saldo || 0) > 0.05;
-  }
 
   nombreHuesped(r: ReservaHoy | null | undefined): string {
     if (!r) return '';

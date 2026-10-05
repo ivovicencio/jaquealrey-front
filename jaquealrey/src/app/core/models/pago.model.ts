@@ -1,18 +1,13 @@
 // Respuesta de GET /api/pagos/ingresos.
 //
-// facturado y cobrado son preguntas distintas. Facturado es lo que las reservas
-// confirmadas de este mes van a valer; cobrado es la plata que efectivamente
-// entro. Casi nunca dan igual, y la diferencia es justamente lo que hay que ir a
-// buscar: anticipos de reservas de meses futuros, o reservas de este mes que
-// todavia no se pagaron.
+// Facturado y cobrado son totales por fechas contables diferentes.
 export interface IngresosData {
   facturado_total: number;
   cobrado_total: number;
-  a_cobrar_total: number;
   pendiente_confirmar: number;
   por_mes_facturado: IngresosMes[];
   por_mes_cobrado: IngresosMes[];
-  saldo_por_reserva: SaldoReserva[];
+  pagos_incompletos: ReservaPagoIncompleto[];
 }
 
 export interface IngresosMes {
@@ -22,15 +17,12 @@ export interface IngresosMes {
   total: number;
 }
 
-export interface SaldoReserva {
-  // Sin este id el formulario de cobro del panel mandaba `reserva_id: undefined`,
-  // JSON.stringify lo omitía y el backend contestaba 400 siempre. Es el flujo
-  // "Reservas con saldo", o sea el que se usa para cobrar.
+export interface ReservaPagoIncompleto {
   id: number;
   codigo: string;
   precio_total: number;
   pagado: number;
-  saldo: number;
+  pago_completo: boolean;
   fecha_entrada: string;
   fecha_salida: string;
 }
@@ -64,10 +56,10 @@ export interface PagosReserva {
   pagos: Pago[];
   total_reserva: number;
   total_pagado: number;
-  saldo: number;
 }
 
-// Datos de cobro que ve el huesped (alias, banco, titular, anticipo).
+// Configuracion de cobro. La pantalla publica usa el alias y muestra el total;
+// el porcentaje de anticipo se conserva para la regla interna hasta confirmarlo.
 export interface ConfigCobro {
   alias_bancario: string;
   titular_cuenta: string;
@@ -92,7 +84,6 @@ export interface OcupacionReserva {
   huespedes: number;
   precio_total: number;
   pagado: number;
-  saldo: number;
   cliente: string;
   telefono: string;
 }

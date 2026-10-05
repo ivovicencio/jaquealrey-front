@@ -1,9 +1,11 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AdminService } from '../../../core/services/admin.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { CurrencyArPipe } from '../../../shared/pipes/currency-ar.pipe';
 import { OcupacionData, OcupacionHabitacion, OcupacionReserva } from '../../../core/models/pago.model';
+import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
 
 // Calendario de ocupacion, en la grilla clasica de hotel: habitaciones en filas,
 // dias en columnas.
@@ -16,10 +18,11 @@ import { OcupacionData, OcupacionHabitacion, OcupacionReserva } from '../../../c
 @Component({
   selector: 'app-calendario',
   standalone: true,
-  imports: [FormsModule, CurrencyArPipe],
+  imports: [FormsModule, CurrencyArPipe, RouterLink, BackButtonComponent],
   template: `
     <div class="container admin-page">
       <div class="admin-header">
+        <app-back-button fallbackUrl="/admin" fallbackLabel="Volver al Panel" />
         <h1 class="page-title"><i class="fas fa-chess-pawn"></i> Calendario de Ocupacion</h1>
       </div>
 
@@ -114,7 +117,20 @@ import { OcupacionData, OcupacionHabitacion, OcupacionReserva } from '../../../c
                         (click)="seleccionar(h, dia)"
                       >
                         @if (reservaEn(h, dia); as r) {
-                          <i class="fas fa-chess-pawn pawn"></i>
+                          @if (r.fecha_entrada.slice(0, 10) === dia) {
+                            <a
+                              class="pawn-code"
+                              [routerLink]="['/admin/reservas', r.id]"
+                              [state]="{ returnUrl: '/admin/calendario' }"
+                              [attr.aria-label]="'Abrir reserva ' + r.codigo"
+                              (click)="$event.stopPropagation()"
+                            >
+                              <i class="fas fa-chess-pawn pawn"></i>
+                              <span>{{ r.codigo }}</span>
+                            </a>
+                          } @else {
+                            <i class="fas fa-chess-pawn pawn"></i>
+                          }
                         }
                       </td>
                     }
@@ -203,6 +219,19 @@ import { OcupacionData, OcupacionHabitacion, OcupacionReserva } from '../../../c
     .pawn.confirm { color: #2e6b3f; }
     .pawn.pendiente { color: #b08d2f; }
     .pawn.libre { color: var(--border); }
+    .pawn-code {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.1rem;
+      color: var(--text);
+      font-size: 0.55rem;
+      font-weight: 700;
+      line-height: 1;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .pawn-code:hover { color: var(--gold-dark); text-decoration: underline; }
 
     .leyenda {
       display: flex;
@@ -374,7 +403,8 @@ export class AdminCalendarioComponent implements OnInit {
   tituloCelda(h: OcupacionHabitacion, dia: string): string {
     const r = this.reservaEn(h, dia);
     if (!r) return `Habitacion ${h.numero} - libre`;
-    return `${r.codigo} - ${r.cliente} (${r.estado})`;
+    const estado = r.estado === 'En_Casa' ? 'En uso' : r.estado;
+    return `${r.codigo} - ${r.cliente} (${estado})`;
   }
 
   seleccionar(h: OcupacionHabitacion, dia: string): void {

@@ -113,8 +113,7 @@ export class PdfService {
       { titulo: 'Salida', ancho: 22, campo: 'salida' },
       { titulo: 'Huesp.', ancho: 14, campo: 'huespedes' },
       { titulo: 'Total', ancho: 26, campo: 'total', align: 'right' as const },
-      { titulo: 'Pagado', ancho: 24, campo: 'pagado', align: 'right' as const },
-      { titulo: 'Saldo', ancho: 24, campo: 'saldo', align: 'right' as const },
+      { titulo: 'Pago', ancho: 20, campo: 'pago' },
       { titulo: 'Estado', ancho: 24, campo: 'estado' },
     ];
 
@@ -126,9 +125,8 @@ export class PdfService {
       r.fecha_salida ?? '',
       r.huespedes ?? '',
       this.dinero(r.precio_total),
-      this.dinero(r.pagado),
-      this.dinero(r.saldo),
-      r.estado ?? '',
+      Number(r.pagado || 0) + 0.05 >= Number(r.precio_total || 0) ? 'Pagado' : 'Pendiente',
+      r.estado === 'En_Casa' ? 'En uso' : r.estado ?? '',
     ]);
 
     const totalFilas = filas.length;
@@ -166,8 +164,7 @@ export class PdfService {
     doc.setTextColor(41, 37, 36);
     doc.text(`Reservas listadas: ${totalFilas}`, this.MARGEN, y);
     doc.text(`Facturado: ${this.dinero(facturado)}`, 120, y);
-    doc.text(`Cobrado: ${this.dinero(cobrado)}`, 175, y);
-    doc.text(`Saldo: ${this.dinero(facturado - cobrado)}`, 225, y);
+    doc.text(`Cobrado: ${this.dinero(cobrado)}`, 185, y);
 
     this.pie(doc);
     doc.save(`reservas-${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -180,16 +177,15 @@ export class PdfService {
     const doc = this.nuevo('portada');
     let y = this.encabezado(doc, 'Reporte de ingresos', 'Facturado por mes de estadia vs cobrado por mes de pago');
 
-    // Los tres numeros que resumen el estado de la caja.
+    // Los totales facturado y cobrado usan fechas contables diferentes.
     const tarjetas = [
       { etiqueta: 'Facturado total', valor: this.dinero(data.facturado_total) },
       { etiqueta: 'Cobrado total', valor: this.dinero(data.cobrado_total) },
-      { etiqueta: 'A cobrar', valor: this.dinero(data.a_cobrar_total) },
       { etiqueta: 'Pendiente de confirmar', valor: this.dinero(data.pendiente_confirmar) },
     ];
 
     const ancho = doc.internal.pageSize.getWidth();
-    const anchoTarjeta = (ancho - this.MARGEN * 2 - 6) / 4;
+    const anchoTarjeta = (ancho - this.MARGEN * 2 - 4) / 3;
 
     tarjetas.forEach((t, i) => {
       const x = this.MARGEN + i * (anchoTarjeta + 2);
@@ -257,44 +253,6 @@ export class PdfService {
       },
       margin: { left: this.MARGEN, right: this.MARGEN },
     }) + 8;
-
-    // Las facturas con saldo son lo mas accionable del reporte.
-    const saldo = data.saldo_por_reserva ?? [];
-    if (saldo.length) {
-      if (y > doc.internal.pageSize.getHeight() - 40) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Reservas con saldo pendiente', this.MARGEN, y);
-      y += 3;
-
-      tabla(doc, {
-        head: [['Codigo', 'Entrada', 'Salida', 'Total', 'Pagado', 'Saldo']],
-        body: saldo.map((r: any) => [
-          r.codigo,
-          r.fecha_entrada,
-          r.fecha_salida,
-          this.dinero(r.precio_total),
-          this.dinero(r.pagado),
-          this.dinero(r.saldo),
-        ]),
-        startY: y,
-        theme: 'grid',
-        styles: { fontSize: 8, cellPadding: 1.8 },
-        headStyles: { fillColor: [150, 60, 60] },
-        columnStyles: {
-          0: { cellWidth: 28 },
-          1: { cellWidth: 24 },
-          2: { cellWidth: 24 },
-          3: { cellWidth: 28, halign: 'right' },
-          4: { cellWidth: 28, halign: 'right' },
-          5: { cellWidth: 28, halign: 'right' },
-        },
-        margin: { left: this.MARGEN, right: this.MARGEN },
-      });
-    }
 
     this.pie(doc);
     doc.save(`ingresos-${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -413,8 +371,8 @@ export class PdfService {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(41, 37, 36);
-    doc.text(`Pagado: ${this.dinero(pagado)}`, this.MARGEN, y);
-    doc.text(`Saldo: ${this.dinero(Number(reserva.precio_total || 0) - pagado)}`, 120, y);
+    const pagoCompleto = pagado + 0.05 >= Number(reserva.precio_total || 0);
+    doc.text(`Pago: ${pagoCompleto ? 'Pagado' : 'Pendiente'}`, this.MARGEN, y);
 
     this.pie(doc);
     doc.save(`reserva-${reserva.codigo}.pdf`);

@@ -4,11 +4,12 @@ import { HabitacionService } from '../../../../core/services/habitacion.service'
 import { HabitacionImagenService } from '../../../../core/services/habitacion-imagen.service';
 import { Habitacion } from '../../../../core/models/habitacion.model';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
+import { BackButtonComponent } from '../../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-habitacion-detail',
   standalone: true,
-  imports: [RouterLink, CurrencyArPipe],
+  imports: [RouterLink, CurrencyArPipe, BackButtonComponent],
   template: `
     <div class="container page">
       @if (loading()) {
@@ -26,14 +27,18 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
           <div class="card-body text-center">
             <p class="empty-icon"><i class="fas fa-magnifying-glass"></i></p>
             <p>Habitacion no encontrada.</p>
-            <a routerLink="/habitaciones" class="btn btn-outline mt-2">Volver a Habitaciones</a>
+            <app-back-button fallbackUrl="/habitaciones" fallbackLabel="Volver a Habitaciones" />
           </div>
         </div>
       } @else {
-        <a routerLink="/habitaciones" class="back-link">&larr; Volver a Habitaciones</a>
+        <app-back-button fallbackUrl="/habitaciones" fallbackLabel="Volver a Habitaciones" />
 
         <div class="detail-layout">
-          <div class="detail-image" [style.background]="gradient()">
+          <div
+            class="detail-image"
+            [class.sin-foto]="!imagenes.tieneImagen(habitacion())"
+            [style.background]="gradient()"
+          >
             <span class="room-number">{{ habitacion()!.numero }}</span>
           </div>
 
@@ -68,6 +73,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                     <span class="price-unit">por noche</span>
                   </div>
                   <a [routerLink]="['/reserva']"
+                     [state]="{ returnUrl: '/habitaciones/' + habitacion()!.id }"
                      [queryParams]="{ habitacion_id: habitacion()!.id, precio: habitacion()!.precio_noche }"
                      class="btn btn-primary btn-lg">
                     Reservar esta habitacion
@@ -116,6 +122,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       font-weight: 400;
       color: rgba(255, 255, 255, 0.78);
     }
+    .detail-image.sin-foto .room-number { color: var(--text-light); }
     .detail-info .card {
       border: 0;
       border-radius: 0;
@@ -204,7 +211,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 export class HabitacionDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private habitacionService = inject(HabitacionService);
-  private imagenes = inject(HabitacionImagenService);
+  readonly imagenes = inject(HabitacionImagenService);
 
   habitacion = signal<Habitacion | null>(null);
   loading = signal(true);

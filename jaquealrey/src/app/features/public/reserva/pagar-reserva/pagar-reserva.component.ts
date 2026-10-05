@@ -1,4 +1,5 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AdminService } from '../../../../core/services/admin.service';
 import { ReservaService } from '../../../../core/services/reserva.service';
@@ -24,16 +25,20 @@ import { ToastService } from '../../../../shared/services/toast.service';
 @Component({
   selector: 'app-pagar-reserva',
   standalone: true,
-  imports: [RouterLink, CurrencyArPipe],
+  imports: [RouterLink, CurrencyArPipe, FormsModule],
   template: `
     <div class="container page">
       <div class="pay-card card">
         <div class="card-body">
-          <span class="step">Paso 2 de 3</span>
-          <h1>Pagar Reserva</h1>
-          <p class="lead">
-            Transferí al alias y después apretá el botón para avisarle al hotel.
-          </p>
+          <span class="step">{{ yaAviso() ? 'Paso 3 de 3' : 'Paso 2 de 3' }}</span>
+          <h1>{{ yaAviso() ? 'Aviso enviado' : 'Pagar Reserva' }}</h1>
+          @if (yaAviso()) {
+            <p class="lead">Tu último paso es esperar la verificación del hotel.</p>
+          } @else {
+            <p class="lead">
+              Transferí al alias y después apretá el botón para avisarle al hotel.
+            </p>
+          }
 
           @if (cargando()) {
             <div class="estado">Cargando los datos de la cuenta…</div>
@@ -62,31 +67,9 @@ import { ToastService } from '../../../../shared/services/toast.service';
             </div>
 
             <dl class="datos">
-              @if (cfg()?.banco_nombre && cfg()?.banco_nombre !== 'PENDIENTE-DE-CARGAR') {
-                <div>
-                  <dt>Banco</dt>
-                  <dd>{{ cfg()?.banco_nombre }}</dd>
-                </div>
-              }
-              @if (cfg()?.titular_cuenta && cfg()?.titular_cuenta !== 'PENDIENTE-DE-CARGAR') {
-                <div>
-                  <dt>Titular de la cuenta</dt>
-                  <dd>{{ cfg()?.titular_cuenta }}</dd>
-                </div>
-              }
               <div>
                 <dt>Total de la reserva</dt>
                 <dd class="total" data-testid="total">{{ total() | currencyAr }}</dd>
-              </div>
-              <div>
-                <dt>Anticipo requerido ({{ cfg()?.anticipo_porcentaje }}%)</dt>
-                <dd class="total" data-testid="anticipo">
-                  @if (montoAnticipo() !== null) {
-                    {{ montoAnticipo() | currencyAr }}
-                  } @else {
-                    No disponible
-                  }
-                </dd>
               </div>
             </dl>
 
@@ -97,16 +80,57 @@ import { ToastService } from '../../../../shared/services/toast.service';
                 llegó. Podés verificarlo cuando quieras con tu código.
               </div>
             } @else {
-              <div class="acciones">
+              <form class="acciones" (ngSubmit)="confirmar()" #pagoForm="ngForm">
+                <label class="campo-transferencia">
+                  Número de operación
+                  <input
+                    class="form-input"
+                    type="text"
+                    name="numeroOperacion"
+                    id="pago-numero-operacion"
+                    [(ngModel)]="numeroOperacion"
+                    maxlength="80"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+                <label class="campo-transferencia">
+                  Referencia de la transferencia
+                  <input
+                    class="form-input"
+                    type="text"
+                    name="referencia"
+                    id="pago-referencia"
+                    [(ngModel)]="referencia"
+                    maxlength="80"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+                <label class="campo-transferencia">
+                  Fecha de la transferencia
+                  <input
+                    class="form-input"
+                    type="date"
+                    name="fechaTransferencia"
+                    id="pago-fecha-transferencia"
+                    [(ngModel)]="fechaTransferencia"
+                    [max]="fechaMaxima"
+                    required
+                  />
+                </label>
+                <p class="ayuda">
+                  No adjuntes fotos ni comprobantes. El hotel verificará la transferencia en su cuenta.
+                  El aviso no confirma la reserva.
+                </p>
                 <button
-                  type="button"
+                  type="submit"
                   class="btn btn-primary btn-lg"
-                  (click)="confirmar()"
-                  [disabled]="enviando()"
+                  [disabled]="enviando() || pagoForm.invalid"
                 >
                   {{ enviando() ? 'Avisando…' : 'Ya transferí, avisar al hotel' }}
                 </button>
-              </div>
+              </form>
             }
 
             <p class="ayuda">
@@ -146,6 +170,17 @@ import { ToastService } from '../../../../shared/services/toast.service';
     .lead {
       color: var(--text-light);
       margin-bottom: 1.75rem;
+    }
+    .campo-transferencia {
+      display: grid;
+      gap: 0.4rem;
+      width: 100%;
+      color: var(--text);
+      font-weight: 600;
+      text-align: left;
+    }
+    .campo-transferencia .form-input {
+      width: 100%;
     }
     .estado {
       padding: 1rem;
@@ -265,22 +300,20 @@ export class PagarReservaComponent implements OnInit {
   private toast = inject(ToastService);
 
   codigo = signal('');
+  // El anticipo sigue configurado internamente, pero no se muestra al huésped
+  // hasta que el hotel confirme su política de cobro.
   cfg = signal<ConfigCobro | null>(null);
   total = signal(0);
-  montoAnticipo = computed(() => {
-    const porcentaje = Number(this.cfg()?.anticipo_porcentaje);
-    const total = this.total();
-    if (!Number.isFinite(porcentaje) || porcentaje < 0 || porcentaje > 100 || total <= 0) {
-      return null;
-    }
-    return Math.round(total * porcentaje) / 100;
-  });
 
   cargando = signal(true);
   error = signal('');
   enviando = signal(false);
   yaAviso = signal(false);
   copiado = signal(false);
+  numeroOperacion = '';
+  referencia = '';
+  fechaTransferencia = '';
+  readonly fechaMaxima = this.fechaLocal();
 
   private email = '';
 
@@ -352,8 +385,21 @@ export class PagarReservaComponent implements OnInit {
       return;
     }
 
+    if (!this.numeroOperacion.trim() || !this.referencia.trim() || !this.fechaTransferencia) {
+      this.error.set('Ingresá el número de operación, la referencia y la fecha de la transferencia.');
+      return;
+    }
+
     this.enviando.set(true);
-    this.reservaService.reportarPago(this.codigo(), this.email).subscribe({
+    this.reservaService
+      .reportarPago(
+        this.codigo(),
+        this.email,
+        this.numeroOperacion.trim(),
+        this.referencia.trim(),
+        this.fechaTransferencia
+      )
+      .subscribe({
       next: (res) => {
         this.enviando.set(false);
         if (res.status === '1') {
@@ -367,6 +413,11 @@ export class PagarReservaComponent implements OnInit {
         this.enviando.set(false);
         this.error.set(err?.error?.msg || 'No pudimos registrar el aviso.');
       },
-    });
+      });
+  }
+
+  private fechaLocal(): string {
+    const hoy = new Date();
+    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
   }
 }

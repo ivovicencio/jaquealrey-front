@@ -6,13 +6,15 @@ import { ReservaService } from '../../../../core/services/reserva.service';
 import { ReservaConsulta } from '../../../../core/models/reserva.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
+import { BackButtonComponent } from '../../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-consultar-reserva',
   standalone: true,
-  imports: [FormsModule, RouterLink, DatePipe, CurrencyArPipe],
+  imports: [FormsModule, RouterLink, DatePipe, CurrencyArPipe, BackButtonComponent],
   template: `
     <div class="container page">
+      <app-back-button fallbackUrl="/" fallbackLabel="Volver al Inicio" />
       <h1 class="page-title">Consultar mi Reserva</h1>
       <p class="page-subtitle">
         Ingresa el codigo que recibiste al reservar y el email con el que reservaste.
@@ -93,7 +95,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                 <span class="result-label">Codigo</span>
                 <span class="result-code">{{ r.codigo }}</span>
               </div>
-              <span [class]="'badge ' + badgeClass(r.estado)">{{ r.estado }}</span>
+              <span [class]="'badge ' + badgeClass(r.estado)">{{ estadoLabel(r.estado) }}</span>
             </div>
 
             <dl class="detail-grid">
@@ -330,10 +332,15 @@ export class ConsultarReservaComponent implements OnInit {
   badgeClass(estado: string): string {
     switch (estado) {
       case 'Confirmada': return 'badge-success';
+      case 'En_Casa': return 'badge-success';
       case 'Pendiente': return 'badge-warning';
       case 'Cancelada': return 'badge-danger';
       case 'Completada': return 'badge-info';
       default: return 'badge';
     }
+  }
+
+  estadoLabel(estado: string): string {
+    return estado === 'En_Casa' ? 'En uso' : estado;
   }
 }

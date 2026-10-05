@@ -9,14 +9,16 @@ import { Reserva } from '../../../../core/models/reserva.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 import { PdfService } from '../../../../core/services/pdf.service';
+import { BackButtonComponent } from '../../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-reserva-list',
   standalone: true,
-  imports: [RouterLink, FormsModule, CurrencyArPipe, DatePipe],
+  imports: [RouterLink, FormsModule, CurrencyArPipe, DatePipe, BackButtonComponent],
   template: `
     <div class="container admin-page">
       <div class="admin-header">
+        <app-back-button fallbackUrl="/admin" fallbackLabel="Volver al Panel" />
         <h1 class="page-title">Gestionar Reservas</h1>
       </div>
 
@@ -28,7 +30,7 @@ import { PdfService } from '../../../../core/services/pdf.service';
               <option value="">Todos</option>
               <option value="Pendiente">Pendiente</option>
               <option value="Confirmada">Confirmada</option>
-              <option value="En_Casa">En casa</option>
+              <option value="En_Casa">En uso</option>
               <option value="Cancelada">Cancelada</option>
               <option value="Completada">Completada</option>
             </select>
@@ -68,8 +70,7 @@ import { PdfService } from '../../../../core/services/pdf.service';
                   <th>Salida</th>
                   <th>Huéspedes</th>
                   <th>Precio</th>
-                  <th>Pagado</th>
-                  <th>Saldo</th>
+                  <th>Pago</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
@@ -84,25 +85,25 @@ import { PdfService } from '../../../../core/services/pdf.service';
                     <td>{{ r.fecha_salida | date:'dd/MM/yyyy' }}</td>
                     <td>{{ r.huespedes }}</td>
                     <td>{{ r.precio_total | currencyAr }}</td>
-                    <td>{{ (r.pagado ?? 0) | currencyAr }}</td>
                     <td>
-                      @if ((r.saldo ?? 0) > 0.01) {
-                        <span class="saldo-pendiente">{{ r.saldo | currencyAr }}</span>
+                      @if ((r.pagado ?? 0) + 0.05 >= r.precio_total) {
+                        <span class="pago-confirmado"><i class="fas fa-check"></i> Pagado</span>
                       } @else {
-                        <span class="saldo-cobrado"><i class="fas fa-check"></i> Cobrado</span>
+                        <span class="pago-pendiente">Pendiente</span>
                       }
                     </td>
                     <td>
-                      <span [class]="'badge ' + badgeClass(r.estado)">{{ r.estado }}</span>
+                      <span [class]="'badge ' + badgeClass(r.estado)">{{ estadoLabel(r.estado) }}</span>
                     </td>
                     <td>
-                      <a [routerLink]="['/admin/reservas', r.id]" class="btn btn-outline btn-sm"
+                      <a [routerLink]="['/admin/reservas', r.id]" [state]="{ returnUrl: '/admin/reservas' }"
+                        class="btn btn-outline btn-sm"
                         (click)="$event.stopPropagation()">Ver</a>
                     </td>
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="11" class="empty-state">No se encontraron reservas</td>
+                    <td colspan="10" class="empty-state">No se encontraron reservas</td>
                   </tr>
                 }
               </tbody>
@@ -139,8 +140,8 @@ import { PdfService } from '../../../../core/services/pdf.service';
     .filter-group { min-width: 160px; }
     .filter-actions { margin-left: auto; }
 
-    .saldo-pendiente { color: #a1443c; font-weight: 600; }
-    .saldo-cobrado { color: #2e6b3f; font-size: 0.8125rem; }
+    .pago-pendiente { color: #a1443c; font-weight: 600; }
+    .pago-confirmado { color: #2e6b3f; font-size: 0.8125rem; }
 
     .loading-state {
       display: flex;
@@ -267,7 +268,9 @@ export class AdminReservaListComponent implements OnInit {
   }
 
   goToDetail(id: number) {
-    this.router.navigate(['/admin/reservas', id]);
+    this.router.navigate(['/admin/reservas', id], {
+      state: { returnUrl: '/admin/reservas' },
+    });
   }
 
   badgeClass(estado: string): string {
@@ -279,6 +282,10 @@ export class AdminReservaListComponent implements OnInit {
       case 'Completada': return 'badge-info';
       default: return 'badge';
     }
+  }
+
+  estadoLabel(estado: string): string {
+    return estado === 'En_Casa' ? 'En uso' : estado;
   }
 
   // Exporta lo que se esta viendo en pantalla, con los mismos filtros.

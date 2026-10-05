@@ -8,21 +8,20 @@ import { PdfService } from '../../../core/services/pdf.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { CurrencyArPipe } from '../../../shared/pipes/currency-ar.pipe';
 import { ConfigCobro, IngresosData, Pago } from '../../../core/models/pago.model';
+import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
 
 // Panel de pagos e ingresos del hotel.
 //
-// El hotel cobra por transferencia a alias, no por pasarela. Eso cambia el
-// modelo entero: no hay webhook que notifique el pago, asi que la confirmacion
-// la hace una persona desde este panel. Por eso las dos mitades estan juntas en
-// la misma pantalla: se ve cuanto se facturo, cuanto se cobro, y abajo se carga
-// el pago que falta.
+// El hotel cobra por transferencia a alias, no por pasarela. La confirmación
+// del pago la hace una persona desde este panel.
 @Component({
   selector: 'app-pagos',
   standalone: true,
-  imports: [FormsModule, CurrencyArPipe, DatePipe],
+  imports: [FormsModule, CurrencyArPipe, DatePipe, BackButtonComponent],
   template: `
     <div class="container admin-page">
       <div class="admin-header">
+        <app-back-button fallbackUrl="/admin" fallbackLabel="Volver al Panel" />
         <h1 class="page-title">Pagos e Ingresos</h1>
       </div>
 
@@ -46,13 +45,6 @@ import { ConfigCobro, IngresosData, Pago } from '../../../core/models/pago.model
                 <div class="stat-icon"><i class="fas fa-sack-dollar"></i></div>
                 <div class="stat-value">{{ ing.cobrado_total | currencyAr }}</div>
                 <div class="stat-label">Cobrado total</div>
-              </div>
-            </div>
-            <div class="card stat-card aviso">
-              <div class="card-body stat-body">
-                <div class="stat-icon"><i class="fas fa-hand-holding-dollar"></i></div>
-                <div class="stat-value">{{ ing.a_cobrar_total | currencyAr }}</div>
-                <div class="stat-label">Falta cobrar</div>
               </div>
             </div>
             <div class="card stat-card">
@@ -81,9 +73,8 @@ import { ConfigCobro, IngresosData, Pago } from '../../../core/models/pago.model
               <div class="card-body">
                 <h2 class="card-title">Datos de cobro</h2>
                 <p class="hint">
-                  Esto es lo que ve el huesped al reservar. El alias, el banco y el
-                  titular cambian cada vez que el hotel cambia de cuenta, asi que
-                  viven en la base y no hace falta tocar el servidor.
+                  El alias se muestra al huésped para transferir. El banco y el
+                  titular son datos internos del hotel.
                 </p>
                 <div class="config-grid">
                   <div class="form-group">
@@ -98,11 +89,6 @@ import { ConfigCobro, IngresosData, Pago } from '../../../core/models/pago.model
                     <label class="form-label">Titular de la cuenta</label>
                     <input class="form-input" [(ngModel)]="cfg.titular_cuenta" />
                   </div>
-                  <div class="form-group">
-                    <label class="form-label">Anticipo (%)</label>
-                    <input class="form-input" type="number" min="0" max="100"
-                      [(ngModel)]="cfg.anticipo_porcentaje" />
-                  </div>
                   <div class="form-group config-acciones">
                     <button type="button" class="btn btn-primary" (click)="guardarConfig()" [disabled]="guardandoConfig()">
                       {{ guardandoConfig() ? 'Guardando...' : 'Guardar datos' }}
@@ -113,11 +99,11 @@ import { ConfigCobro, IngresosData, Pago } from '../../../core/models/pago.model
             </div>
           }
 
-          @if (ing.saldo_por_reserva.length) {
+          @if (ing.pagos_incompletos.length) {
             <div class="card table-card">
               <div class="card-body">
-                <h2 class="card-title">Reservas con saldo pendiente</h2>
-                <p class="hint">Confirmadas y pagadas por debajo del total. Son las que hay que perseguir.</p>
+                <h2 class="card-title">Reservas sin pago completo</h2>
+                <p class="hint">El pago total debe estar confirmado antes de entregar la llave.</p>
                 <div class="table-responsive">
                   <table class="table table-striped">
                     <thead>
@@ -126,24 +112,22 @@ import { ConfigCobro, IngresosData, Pago } from '../../../core/models/pago.model
                         <th>Entrada</th>
                         <th>Salida</th>
                         <th>Total</th>
-                        <th>Pagado</th>
-                        <th>Saldo</th>
+                        <th>Pago</th>
                         <th></th>
                       </tr>
                     </thead>
                     <tbody>
-                      @for (r of ing.saldo_por_reserva; track r.codigo) {
+                      @for (r of ing.pagos_incompletos; track r.codigo) {
                         <tr>
                           <td><strong>{{ r.codigo }}</strong></td>
                           <td>{{ r.fecha_entrada | date:'dd/MM/yyyy' }}</td>
                           <td>{{ r.fecha_salida | date:'dd/MM/yyyy' }}</td>
                           <td>{{ r.precio_total | currencyAr }}</td>
-                          <td>{{ r.pagado | currencyAr }}</td>
-                          <td class="saldo-pendiente">{{ r.saldo | currencyAr }}</td>
+                          <td class="pago-pendiente">Pendiente</td>
                           <td>
                             <button type="button" class="btn btn-outline btn-sm"
-                              (click)="abrirModal(r.codigo, r.saldo)">
-                              Cobrar
+                              (click)="abrirModal(r.codigo, r.precio_total - r.pagado)">
+                              Registrar pago
                             </button>
                           </td>
                         </tr>
@@ -240,7 +224,7 @@ import { ConfigCobro, IngresosData, Pago } from '../../../core/models/pago.model
               <div class="info-box">
                 <div><strong>{{ r.codigo }}</strong> - {{ r.cliente_nombre }} {{ r.cliente_apellido }}</div>
                 <div>{{ r.fecha_entrada | date:'dd/MM/yyyy' }} al {{ r.fecha_salida | date:'dd/MM/yyyy' }}</div>
-                <div>Total {{ r.precio_total | currencyAr }} - Pagado {{ r.pagado | currencyAr }} - Saldo {{ r.saldo | currencyAr }}</div>
+                <div>Total {{ r.precio_total | currencyAr }} · Pago {{ r.pago_completo ? 'confirmado' : 'pendiente' }}</div>
               </div>
             }
 
@@ -321,7 +305,7 @@ import { ConfigCobro, IngresosData, Pago } from '../../../core/models/pago.model
     .table-card { overflow: hidden; margin-bottom: 1rem; }
     .table-responsive { overflow-x: auto; }
     .empty-state { text-align: center; color: var(--text-light); padding: 2rem 1rem !important; }
-    .saldo-pendiente { color: #a1443c; font-weight: 600; }
+    .pago-pendiente { color: #a1443c; font-weight: 600; }
 
     .loading-state {
       display: flex; flex-direction: column; align-items: center;
@@ -413,7 +397,7 @@ export class AdminPagosComponent implements OnInit {
   }
 
   cargarConfig() {
-    this.adminService.getConfigCobro().subscribe({
+    this.adminService.getAdminConfigCobro().subscribe({
       next: (res) => {
         if (res.status === '1' && res.data) {
           // Merge en vez de asignar: si el backend no manda alguna clave, se
@@ -425,8 +409,8 @@ export class AdminPagosComponent implements OnInit {
     });
   }
 
-  // Cada clave se guarda por separado porque el endpoint toma una clave por
-  // llamada. Van en cadena con concatMap para no disparar las seis en paralelo:
+  // Cada clave visible se guarda por separado porque el endpoint toma una clave
+  // por llamada. Van en cadena con concatMap para no disparar las llamadas en paralelo:
   // si el hotel edita y guarda dos veces seguido, las peticiones cruzadas podrian
   // llegar desordenadas y dejar guardada la version vieja.
   guardarConfig() {
@@ -434,7 +418,6 @@ export class AdminPagosComponent implements OnInit {
       'alias_bancario',
       'titular_cuenta',
       'banco_nombre',
-      'anticipo_porcentaje',
     ];
 
     const cambios = claves
@@ -494,21 +477,21 @@ export class AdminPagosComponent implements OnInit {
       return;
     }
 
-    const encontrada = this.ingresos()?.saldo_por_reserva.find((r) => r.codigo === codigo);
+    const encontrada = this.ingresos()?.pagos_incompletos.find((r) => r.codigo === codigo);
     if (encontrada) {
       this.reservaBuscada.set(encontrada);
-      this.formMonto = encontrada.saldo;
+      this.formMonto = Math.max(0, Number(encontrada.precio_total) - Number(encontrada.pagado));
       return;
     }
 
-    // Si no esta en la lista de saldos, se busca en el listado de reservas.
+    // Si no está en la lista, permite localizar cualquier reserva por código.
     this.adminService.getReservas({ limite: 100 }).subscribe({
       next: (res) => {
         if (res.status === '1') {
           const r = res.data.reservas.find((x: any) => x.codigo === codigo);
           if (r) {
             this.reservaBuscada.set(r);
-            this.formMonto = Math.max(0, Number(r.saldo ?? r.precio_total));
+            this.formMonto = Math.max(0, Number(r.precio_total) - Number(r.pagado ?? 0));
           } else {
             this.reservaBuscada.set(null);
             this.toast.error('No se encontro ninguna reserva con ese codigo');
@@ -519,10 +502,10 @@ export class AdminPagosComponent implements OnInit {
     });
   }
 
-  abrirModal(codigo: string, saldo: number) {
+  abrirModal(codigo: string, monto: number) {
     this.formCodigo = codigo;
-    this.formMonto = saldo;
-    this.reservaBuscada.set({ codigo, saldo });
+    this.formMonto = monto;
+    this.reservaBuscada.set({ codigo, precio_total: monto, pagado: 0, pago_completo: false });
     this.modalAbierto.set(true);
   }
 
@@ -581,7 +564,7 @@ export class AdminPagosComponent implements OnInit {
   }
 
   anular(p: Pago) {
-    if (!confirm('Anular este pago? La reserva quedara con saldo pendiente de nuevo.')) return;
+    if (!confirm('¿Anular este pago? La reserva volverá a requerir la confirmación del pago completo.')) return;
     this.adminService.updatePagoEstado(p.id, 'Anulado').subscribe({
       next: () => {
         this.toast.success('Pago anulado');

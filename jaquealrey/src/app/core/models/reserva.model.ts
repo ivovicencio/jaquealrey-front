@@ -29,11 +29,11 @@ export interface Reserva {
   cliente_apellido?: string;
   cliente_email?: string;
   cliente_telefono?: string;
-  // Solo vienen en los endpoints de panel (/api/admin/*), no en la consulta
-  // publica. Son la suma de los pagos confirmados y lo que queda por cobrar,
-  // calculados en el backend para no traer la tabla de pagos entera al listado.
+  // Solo viene en los endpoints de panel, no en la consulta pública. La suma
+  // confirmada permite presentar el estado del pago sin traer la tabla completa.
   pagado?: number;
-  saldo?: number;
+  pago_reportado_at?: string | null;
+  pago_reportado_detalle?: string | null;
 }
 
 export interface ReservaAdminList {
@@ -49,12 +49,10 @@ export interface ReservaConsulta extends Reserva {
   horas_para_cancelar: number;
 }
 
-// Pantalla "Hoy" de recepción. Es una reserva de panel mas lo que hace falta
-// para cobrar en el mostrador: lo pagado y el saldo, que el backend calcula en
-// el mismo SELECT para no traer la tabla de pagos entera.
+// El backend calcula el estado del pago completo junto con la reserva para no
+// traer la tabla de pagos entera.
 export interface ReservaHoy extends Reserva {
-  pagado: number;
-  saldo: number;
+  pago_completo: boolean;
 }
 
 export interface HoyData {

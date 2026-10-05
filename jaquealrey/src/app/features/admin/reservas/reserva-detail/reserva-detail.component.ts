@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../../core/services/admin.service';
 import { ReservaService } from '../../../../core/services/reserva.service';
@@ -9,15 +9,16 @@ import { Reserva } from '../../../../core/models/reserva.model';
 import { PagosReserva } from '../../../../core/models/pago.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
+import { BackButtonComponent } from '../../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-reserva-detail',
   standalone: true,
-  imports: [FormsModule, RouterLink, CurrencyArPipe, DatePipe],
+  imports: [FormsModule, CurrencyArPipe, DatePipe, BackButtonComponent],
   template: `
     <div class="container admin-page">
 <div class="admin-header">
-          <a routerLink="/admin/reservas" class="back-link"><i class="fas fa-arrow-left"></i> Volver a Reservas</a>
+          <app-back-button fallbackUrl="/admin/reservas" fallbackLabel="Volver a Reservas" />
           <div class="title-row">
             <h1 class="page-title">Detalle de Reserva</h1>
             <button type="button" class="btn btn-outline" (click)="exportarComprobante()">
@@ -36,7 +37,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
           <div class="card info-card">
             <div class="card-header">
               <h3>Información de la Reserva</h3>
-              <span [class]="'badge ' + badgeClass(reserva()!.estado)">{{ reserva()!.estado }}</span>
+              <span [class]="'badge ' + badgeClass(reserva()!.estado)">{{ estadoLabel(reserva()!.estado) }}</span>
             </div>
             <div class="card-body">
               <div class="info-rows">
@@ -45,11 +46,11 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                   <span class="info-value"><strong>{{ reserva()!.codigo }}</strong></span>
                 </div>
                 <div class="info-row">
-                  <span class="info-label">Fecha de Entrada</span>
+                  <span class="info-label">Entrada prevista</span>
                   <span class="info-value">{{ reserva()!.fecha_entrada | date:'dd/MM/yyyy' }}</span>
                 </div>
                 <div class="info-row">
-                  <span class="info-label">Fecha de Salida</span>
+                  <span class="info-label">Salida prevista</span>
                   <span class="info-value">{{ reserva()!.fecha_salida | date:'dd/MM/yyyy' }}</span>
                 </div>
                 <div class="info-row">
@@ -61,15 +62,8 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                     <span class="info-value price">{{ reserva()!.precio_total | currencyAr }}</span>
                   </div>
                   <div class="info-row">
-                    <span class="info-label">Pagado</span>
-                    <span class="info-value">{{ (pagos()?.total_pagado ?? 0) | currencyAr }}</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">Saldo</span>
-                    <span
-                      class="info-value"
-                      [class.saldo-pendiente]="(pagos()?.saldo ?? 0) > 0.01"
-                    >{{ (pagos()?.saldo ?? 0) | currencyAr }}</span>
+                    <span class="info-label">Pago</span>
+                    <span class="info-value">{{ pagoCompleto() ? 'Pagado' : 'Pendiente' }}</span>
                   </div>
                 @if (reserva()!.notas) {
                   <div class="info-row">
@@ -125,41 +119,54 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
         </div>
 
         <div class="card status-card">
-          <div class="card-header"><h3>Actualizar Estado</h3></div>
+          <div class="card-header"><h3>Gestionar estadía</h3></div>
           <div class="card-body">
             <div class="status-form">
-              <div class="form-group">
-                <label class="form-label">Nuevo Estado</label>
-                <select class="form-select" [(ngModel)]="nuevoEstado">
-                  @for (opt of estadoOptions(); track opt) {
-                    <option [value]="opt">{{ opt }}</option>
-                  }
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Notas (opcional)</label>
-                <textarea class="form-textarea" [(ngModel)]="notasCambio" rows="2"
-                  placeholder="Motivo o comentario del cambio..."></textarea>
-              </div>
-              @if (nuevoEstado === 'Confirmada' && anticipoFaltante() > 0) {
-                <div class="form-group">
-                  <label class="check-label">
-                    <input type="checkbox" [(ngModel)]="forzarSinPago" />
-                    Confirmar sin el anticipo (cortesía o pago en efectivo pendiente)
-                  </label>
-                  <p class="hint">
-                    Falta {{ anticipoFaltante() | currencyAr }}. Queda anotado en la bitácora
-                    como “forzado sin pago”.
-                  </p>
+              @if (reserva()!.estado === 'Pendiente') {
+                <p class="hint">
+                  Confirmá la reserva cuando hayas verificado el pago completo.
+                  Al confirmar, el sistema registra el total como pagado.
+                </p>
+                <div class="status-actions">
+                  <button class="btn btn-primary" (click)="updateEstado('Confirmada')" [disabled]="updating()">
+                    {{ updating() ? 'Actualizando...' : 'Confirmar reserva' }}
+                  </button>
+                  <button class="btn btn-outline" (click)="updateEstado('Cancelada')" [disabled]="updating()">
+                    Cancelar reserva
+                  </button>
                 </div>
-              }
-              <button class="btn btn-primary" (click)="updateEstado()" [disabled]="updating()">
-                @if (updating()) {
-                  <span class="spinner-sm"></span> Actualizando...
-                } @else {
-                  Actualizar Estado
+              } @else if (reserva()!.estado === 'Confirmada') {
+                @if (!pagoCompleto()) {
+                  <p class="hint">Confirmá el pago completo antes de entregar la llave.</p>
+                  <button type="button" class="btn btn-outline" (click)="abrirFormPago()">Registrar pago</button>
                 }
-              </button>
+                <div class="status-actions">
+                  <button class="btn btn-primary" (click)="updateEstado('En_Casa')" [disabled]="updating() || !pagoCompleto()">
+                    {{ updating() ? 'Actualizando...' : 'Marcar En uso' }}
+                  </button>
+                  <button class="btn btn-outline" (click)="updateEstado('Cancelada')" [disabled]="updating()">
+                    Cancelar reserva
+                  </button>
+                </div>
+              } @else if (reserva()!.estado === 'En_Casa') {
+                <p class="hint">
+                  Cuando el huésped deje la habitación, completá la estadía. La habitación pasará a limpieza.
+                </p>
+                @if (!pagoCompleto()) {
+                  <p class="hint">El pago completo debe estar confirmado antes de completar la estadía.</p>
+                  <button type="button" class="btn btn-outline" (click)="abrirFormPago()">Registrar pago</button>
+                }
+                <div class="form-group">
+                  <label class="form-label">Notas (opcional)</label>
+                  <textarea class="form-textarea" [(ngModel)]="notasCambio" rows="2"
+                    placeholder="Comentario sobre la salida..."></textarea>
+                </div>
+                <button class="btn btn-primary" (click)="updateEstado('Completada')" [disabled]="updating() || !pagoCompleto()">
+                  {{ updating() ? 'Actualizando...' : 'Completar estadía' }}
+                </button>
+              } @else {
+                <p class="hint">Esta reserva está {{ estadoLabel(reserva()!.estado).toLowerCase() }} y no tiene más acciones disponibles.</p>
+              }
             </div>
           </div>
         </div>
@@ -336,7 +343,6 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       flex-wrap: wrap;
     }
 
-    .saldo-pendiente { color: #a1443c; font-weight: 700; }
 
     .check-label {
       display: flex; align-items: center; gap: 0.5rem;
@@ -368,6 +374,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       gap: 1rem;
       max-width: 480px;
     }
+    .status-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
     .spinner-sm {
       display: inline-block;
       width: 1rem; height: 1rem;
@@ -400,42 +407,10 @@ export class AdminReservaDetailComponent implements OnInit {
   pagoEstado = 'Confirmado';
   pagoReferencia = '';
 
-  nuevoEstado = '';
   notasCambio = '';
-  forzarSinPago = false;
-  anticipoPct = signal(0);
-
-  estadoOptions = signal<string[]>([]);
-
-  /**
-   * Cuánta plata falta para llegar al anticipo que el hotel exige al confirmar.
-   *
-   * El backend es el que manda: esto solo dibuja el aviso para que el
-   * recepcionista active el override a ciegas. Si el número no coincide, el
-   * 409 del servidor sigue siendo la respuesta correcta.
-   */
-  anticipoFaltante(): number {
-    const total = this.reserva()?.precio_total ?? 0;
-    const pagado = this.pagos()?.total_pagado ?? 0;
-    const requerido = (total * this.anticipoPct()) / 100;
-    return Math.max(0, Math.round((requerido - pagado) * 100) / 100);
-  }
-
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (id) this.loadReserva(id);
-    this.loadAnticipo();
-  }
-
-  private loadAnticipo() {
-    this.adminService.getConfigCobro().subscribe({
-      next: (res) => {
-        if (res.status === '1') {
-          this.anticipoPct.set(Number(res.data?.anticipo_porcentaje) || 0);
-        }
-      },
-      error: () => this.anticipoPct.set(0),
-    });
   }
 
   loadReserva(id: number) {
@@ -444,8 +419,6 @@ export class AdminReservaDetailComponent implements OnInit {
         if (res.status === '1') {
           const found = res.data;
           this.reserva.set(found);
-          this.nuevoEstado = found.estado;
-          this.updateEstadoOptions(found.estado);
         }
         this.loading.set(false);
       },
@@ -456,7 +429,7 @@ export class AdminReservaDetailComponent implements OnInit {
     });
 
     // Los pagos se piden en paralelo al detalle: son endpoints distintos y el
-    // panel ya muestra el saldo sin esperar a que termine el primero.
+    // panel ya muestra el estado del pago sin esperar a que termine el primero.
     this.loadPagos(id);
   }
 
@@ -469,9 +442,15 @@ export class AdminReservaDetailComponent implements OnInit {
     });
   }
 
+  pagoCompleto(): boolean {
+    const reserva = this.reserva();
+    return !!reserva && (this.pagos()?.total_pagado ?? 0) + 0.05 >= reserva.precio_total;
+  }
+
   abrirFormPago() {
-    const saldo = this.pagos()?.saldo ?? this.reserva()?.precio_total ?? 0;
-    this.pagoMonto = saldo > 0 ? Number(saldo) : null;
+    const montoPendiente =
+      (this.reserva()?.precio_total ?? 0) - (this.pagos()?.total_pagado ?? 0);
+    this.pagoMonto = montoPendiente > 0 ? Number(montoPendiente) : null;
     this.pagoReferencia = '';
     this.formPagoAbierto.set(true);
   }
@@ -530,43 +509,31 @@ export class AdminReservaDetailComponent implements OnInit {
     }
   }
 
-  updateEstadoOptions(estado: string) {
-    // Espejo de la maquina de estados del backend (services/reserva.service.js).
-    // Si se desincroniza, el select ofrece transiciones que el backend rechaza
-    // con 409 y el panel muestra un error sin explicar por que.
-    const transitions: Record<string, string[]> = {
-      Pendiente: ['Confirmada', 'Cancelada'],
-      Confirmada: ['En_Casa', 'Completada', 'Cancelada'],
-      En_Casa: ['Completada'],
-      Completada: [],
-      Cancelada: [],
-    };
-    this.estadoOptions.set(transitions[estado] || []);
-  }
-
-  updateEstado() {
+  updateEstado(estado: 'Confirmada' | 'Cancelada' | 'En_Casa' | 'Completada') {
     const r = this.reserva();
-    if (!r || !this.nuevoEstado) return;
-
-    // El override solo viaja si el checkbox está marcado y solo tiene sentido
-    // al confirmar: mandarlo siempre sería mandar el flag de "~pago excused"
-    // en cada cambio de estado.
-    const forzar =
-      this.forzarSinPago && this.nuevoEstado === 'Confirmada' ? true : undefined;
+    if (!r || this.updating()) return;
 
     this.updating.set(true);
-    this.adminService
-      .updateReservaEstado(r.id, this.nuevoEstado, this.notasCambio || undefined, forzar)
+    const datos = { notas: this.notasCambio.trim() || undefined };
+    const actualizacion = estado === 'En_Casa'
+      ? this.adminService.checkIn(r.id, datos)
+      : estado === 'Completada'
+        ? this.adminService.checkOut(r.id, datos)
+        : this.adminService.updateReservaEstado(r.id, estado, datos.notas);
+
+    actualizacion
       .subscribe({
         next: (res) => {
           if (res.status === '1') {
-            this.toast.success('Estado actualizado correctamente');
+            const mensajes: Record<typeof estado, string> = {
+              Confirmada: 'Reserva confirmada',
+              Cancelada: 'Reserva cancelada',
+              En_Casa: 'Estadía marcada en uso',
+              Completada: 'Estadía completada. La habitación queda en limpieza.',
+            };
+            this.toast.success(mensajes[estado]);
             this.reserva.set(res.data);
-            this.updateEstadoOptions(res.data.estado);
             this.notasCambio = '';
-            this.forzarSinPago = false;
-            // El saldo no cambia, pero el detalle devuelto por el PUT no trae
-            // los joins; recargar la reserva entera lo deja consistente.
             this.loadPagos(r.id);
           } else {
             this.toast.error(res.msg || 'Error al actualizar');
@@ -574,12 +541,16 @@ export class AdminReservaDetailComponent implements OnInit {
           this.updating.set(false);
         },
         error: (err) => {
-          // El backend explica el 409 ("falta el anticipo", transicion
-          // invalida). Taparlo con un error generico deja al admin sin salida.
+          // El backend explica los cambios que no se pueden realizar, como una
+          // habitación que todavía está en limpieza o un pago no confirmado.
           this.toast.error(err?.error?.msg || 'Error al actualizar el estado');
           this.updating.set(false);
         },
       });
+  }
+
+  estadoLabel(estado: string): string {
+    return estado === 'En_Casa' ? 'En uso' : estado;
   }
 
   badgeClass(estado: string): string {

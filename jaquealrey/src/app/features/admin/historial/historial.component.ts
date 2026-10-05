@@ -3,14 +3,16 @@ import { DatePipe } from '@angular/common';
 import { AdminService } from '../../../core/services/admin.service';
 import { HistorialReserva } from '../../../core/models/historial.model';
 import { ToastService } from '../../../shared/services/toast.service';
+import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-historial',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, BackButtonComponent],
   template: `
     <div class="container admin-page">
       <div class="admin-header">
+        <app-back-button fallbackUrl="/admin" fallbackLabel="Volver al Panel" />
         <h1 class="page-title">Historial de Cambios</h1>
       </div>
 

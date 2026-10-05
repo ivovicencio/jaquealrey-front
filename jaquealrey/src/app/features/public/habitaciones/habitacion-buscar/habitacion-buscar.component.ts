@@ -5,14 +5,16 @@ import { HabitacionService } from '../../../../core/services/habitacion.service'
 import { HabitacionImagenService } from '../../../../core/services/habitacion-imagen.service';
 import { Habitacion } from '../../../../core/models/habitacion.model';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
+import { BackButtonComponent } from '../../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-habitacion-buscar',
   standalone: true,
-  imports: [RouterLink, FormsModule, CurrencyArPipe],
+  imports: [RouterLink, FormsModule, CurrencyArPipe, BackButtonComponent],
   template: `
     <div class="container page">
       <div class="page-header">
+        <app-back-button fallbackUrl="/habitaciones" fallbackLabel="Volver a Habitaciones" />
         <span class="section-tag">Disponibilidad</span>
         <h1>Buscar Disponibilidad</h1>
         <p class="page-subtitle">Elegí tus fechas y encontrá las mejores opciones para tu viaje</p>
@@ -69,7 +71,11 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
             <div class="rooms-grid">
               @for (h of filteredResults(); track h.id) {
                 <div class="card room-card">
-                  <div class="room-image" [style.background]="gradientFor(h)">
+                  <div
+                    class="room-image"
+                    [class.sin-foto]="!imagenes.tieneImagen(h)"
+                    [style.background]="gradientFor(h)"
+                  >
                     <span class="room-number">{{ h.numero }}</span>
                   </div>
                   <div class="card-body">
@@ -83,6 +89,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                     <div class="room-footer">
                       <span class="price">{{ h.precio_noche | currencyAr }} <small>/noche</small></span>
                       <a [routerLink]="['/reserva']"
+                         [state]="{ returnUrl: '/buscar-disponibilidad' }"
                          [queryParams]="{ habitacion_id: h.id, precio: h.precio_noche, desde: fechaEntrada, hasta: fechaSalida }"
                          class="btn btn-primary btn-sm">
                         Reservar
@@ -182,6 +189,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
       font-weight: 400;
       color: rgba(255, 255, 255, 0.84);
     }
+    .room-image.sin-foto .room-number { color: var(--text-light); }
     .room-header {
       display: flex;
       align-items: center;
@@ -233,7 +241,7 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 })
 export class HabitacionBuscarComponent {
   private habitacionService = inject(HabitacionService);
-  private imagenes = inject(HabitacionImagenService);
+  readonly imagenes = inject(HabitacionImagenService);
 
   fechaEntrada = '';
   fechaSalida = '';

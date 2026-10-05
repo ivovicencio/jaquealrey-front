@@ -59,6 +59,35 @@
                 }
               ]
             },
+            "demo": {
+              "index": {
+                "input": "src/index.demo.html",
+                "output": "index.html"
+              },
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public",
+                  "ignore": ["robots.txt", "sitemap.xml"]
+                },
+                {
+                  "glob": "**/*",
+                  "input": "public-demo",
+                  "output": "/"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "src/assets",
+                  "output": "assets"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.demo.ts"
+                }
+              ]
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,

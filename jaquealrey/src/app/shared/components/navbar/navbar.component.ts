@@ -13,7 +13,7 @@ import { Subscription } from 'rxjs';
   template: `
     <nav class="navbar" [class.scrolled]="scrolled()" [class.has-bg]="!isHome()">
       <div class="navbar-inner container">
-        <a class="navbar-brand" routerLink="/"><span class="logo-icon">&#9819;</span> Hotel Jaque al Rey</a>
+        <a class="navbar-brand" routerLink="/"><span class="logo-icon"><i class="fas fa-chess-king"></i></span> Hotel Jaque al Rey</a>
 
         <button
           class="hamburger"
@@ -28,7 +28,7 @@ import { Subscription } from 'rxjs';
 
       <div class="fullmenu" [class.open]="menuOpen()">
         <div class="fullmenu-top">
-          <span class="fullmenu-logo">&#9819; Hotel Jaque al Rey</span>
+          <span class="fullmenu-logo"><i class="fas fa-chess-king"></i> Hotel Jaque al Rey</span>
           <button class="fullmenu-close" (click)="closeMenu()" aria-label="Cerrar menu">&times;</button>
         </div>
         <app-flowing-menu

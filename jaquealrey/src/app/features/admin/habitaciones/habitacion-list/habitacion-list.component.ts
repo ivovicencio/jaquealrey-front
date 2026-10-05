@@ -5,17 +5,20 @@ import { AdminService } from '../../../../core/services/admin.service';
 import { Habitacion } from '../../../../core/models/habitacion.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
+import { BackButtonComponent } from '../../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-habitacion-list',
   standalone: true,
-  imports: [RouterLink, CurrencyArPipe],
+  imports: [RouterLink, CurrencyArPipe, BackButtonComponent],
   template: `
     <div class="container admin-page">
       <div class="admin-header">
+        <app-back-button fallbackUrl="/admin" fallbackLabel="Volver al Panel" />
         <div class="header-row">
           <h1 class="page-title">Gestionar Habitaciones</h1>
-          <a routerLink="/admin/habitaciones/nueva" class="btn btn-primary">+ Nueva Habitación</a>
+          <a routerLink="/admin/habitaciones/nueva" [state]="{ returnUrl: '/admin/habitaciones' }"
+            class="btn btn-primary">+ Nueva Habitación</a>
         </div>
       </div>
 
@@ -55,7 +58,8 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
                       }
                     </td>
                     <td class="actions-cell">
-                      <a [routerLink]="['/admin/habitaciones', hab.id]" class="btn btn-outline btn-sm">Editar</a>
+                      <a [routerLink]="['/admin/habitaciones', hab.id]" [state]="{ returnUrl: '/admin/habitaciones' }"
+                        class="btn btn-outline btn-sm">Editar</a>
                       <button class="btn btn-danger btn-sm" (click)="confirmDelete(hab)">Eliminar</button>
                     </td>
                   </tr>

@@ -6,11 +6,12 @@ import { HabitacionService } from '../../../core/services/habitacion.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { AppModeService } from '../../../core/services/app-mode.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-admin-walk-in',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, BackButtonComponent],
   template: `
     <div class="container admin-page">
       @if (appMode.esAppEscritorio()) {
@@ -25,8 +26,9 @@ import { AuthService } from '../../../core/services/auth.service';
       }
 
       <div class="admin-header">
+        <app-back-button fallbackUrl="/admin/hoy" fallbackLabel="Volver a Hoy" />
         <h1 class="page-title">Nueva reserva (walk-in)</h1>
-        <p class="subtitle">Se crea ya Confirmada. Después cargá el pago en Pagos si hace falta.</p>
+        <p class="subtitle">Al crearla queda confirmada y pagada por el total de la estadía.</p>
       </div>
 
       <form class="card form" (ngSubmit)="guardar()">

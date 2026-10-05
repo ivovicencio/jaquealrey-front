@@ -51,8 +51,8 @@ import { RESENIAS, Resenia } from './resenias.data';
           </h1>
           <p class="hero-tagline">Tu refugio en el corazon de la Patagonia</p>
           <div class="hero-actions">
-            <a routerLink="/habitaciones" class="btn-hero btn-hero--primary">Ver Habitaciones</a>
-            <a routerLink="/buscar-disponibilidad" class="btn-hero btn-hero--ghost">Buscar Disponibilidad</a>
+            <a routerLink="/habitaciones" [state]="{ returnUrl: '/' }" class="btn-hero btn-hero--primary">Ver Habitaciones</a>
+            <a routerLink="/buscar-disponibilidad" [state]="{ returnUrl: '/' }" class="btn-hero btn-hero--ghost">Buscar Disponibilidad</a>
           </div>
         </div>
       </div>
@@ -192,7 +192,7 @@ import { RESENIAS, Resenia } from './resenias.data';
               </div>
               <div class="rooms-foco-accion">
                 <span class="price">{{ h.precio_noche | currencyAr }} <small>/noche</small></span>
-                <a [routerLink]="['/habitaciones', h.id]" class="btn btn-primary">
+                <a [routerLink]="['/habitaciones', h.id]" [state]="{ returnUrl: '/' }" class="btn btn-primary">
                   Ver detalle <i class="fas fa-arrow-right"></i>
                 </a>
               </div>
@@ -1138,11 +1138,13 @@ export class HomeComponent implements OnInit {
 
   /** El carrusel necesita url de imagen; la foto sale del servicio central. */
   carouselItems = computed<DepthCarouselItem[]>(() =>
-    this.destacadas().map((h) => ({
-      image: this.imagenes.imagenPara(h),
-      alt: h.nombre,
-      hab: h,
-    })),
+    this.destacadas()
+      .filter((h) => this.imagenes.tieneImagen(h))
+      .map((h) => ({
+        image: this.imagenes.imagenPara(h),
+        alt: h.nombre,
+        hab: h,
+      })),
   );
 
   /** Servicios del hotel mostrados en el carrusel circular. */
@@ -1204,7 +1206,9 @@ export class HomeComponent implements OnInit {
         if (res.status !== '1') return;
         const data = res.data;
         this.totalHabitaciones.set(data.length);
-        this.destacadas.set(data.slice(0, this.CUANTAS_DESTACADAS));
+        this.destacadas.set(
+          data.filter((h) => this.imagenes.tieneImagen(h)).slice(0, this.CUANTAS_DESTACADAS)
+        );
       },
     });
   }
