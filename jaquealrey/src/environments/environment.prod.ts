@@ -1,6 +1,5 @@
 export const environment = {
   production: true,
-  // API desplegada en su propio origen; una ruta relativa resolvería contra el
-  // hosting estático del frontend y no llegaría al backend.
-  apiUrl: 'https://api.jaquealrey.com/api',
+  // Reemplazar el host por el dominio asignado por Render antes del build de Vercel.
+  apiUrl: 'https://REEMPLAZAR-ESTE-HOST.onrender.com/api',
 };
